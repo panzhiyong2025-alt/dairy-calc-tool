@@ -12,8 +12,8 @@
     <meta name="theme-color" content="#FFFFFF">
     
     <!-- 图标 -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230052D9'/%3E%3Cpath d='M50 20 C50 20 30 50 30 70 A20 20 0 0 0 70 70 C70 50 50 20 50 20 Z' fill='white'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230052D9'/%3E%3Cpath d='M50 20 C50 20 30 50 30 70 A20 20 0 0 0 70 70 C70 50 50 20 50 20 Z' fill='white'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230052D9'/%3E%3Cpath d='M50 20c-16.57 0-30 13.43-30 30s13.43 30 30 30 30-13.43 30-30-13.43-30-30-30zm0 50c-11.05 0-20-8.95-20-20s8.95-20 20-20 20 8.95 20 20-8.95 20-20 20z'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230052D9'/%3E%3Cpath d='M50 20c-16.57 0-30 13.43-30 30s13.43 30 30 30 30-13.43 30-30-13.43-30-30-30zm0 50c-11.05 0-20-8.95-20-20s8.95-20 20-20 20 8.95 20 20-8.95 20-20 20z'/%3E%3C/svg%3E">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -60,9 +60,10 @@
         
         .stepper-btn {
             width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            background: #F3F4F6; color: #4B5563; border-radius: 12px; font-weight: bold; font-size: 22px;
+            background: #F3F4F6; color: #4B5563; border-radius: 12px; font-weight: bold; font-size: 22px; border: none; cursor: pointer;
         }
         .stepper-btn:active { background: #E5E7EB; color: #111827; }
+        .stepper-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .input-focus:focus-within { background: #fff; box-shadow: 0 0 0 2px var(--primary); z-index: 10; }
         .cost-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: #10B981; opacity: 0.4; }
@@ -79,7 +80,7 @@
         }
         .tab-item {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #9CA3AF; transition: all 0.2s; gap: 2px;
+            color: #9CA3AF; transition: all 0.2s; gap: 2px; cursor: pointer;
         }
         .tab-item.active { color: #0052D9; }
         .tab-item .icon-box { padding: 6px; border-radius: 14px; transition: background 0.2s; }
@@ -99,10 +100,15 @@
         }
         .toast-show { opacity: 1; }
         
-        .toggle-sm { position: relative; width: 36px; height: 20px; background: #E5E7EB; border-radius: 20px; transition: all 0.2s; }
+        .toggle-sm { position: relative; width: 36px; height: 20px; background: #E5E7EB; border-radius: 20px; transition: all 0.2s; cursor: pointer; }
         .toggle-sm.checked { background: #0052D9; }
         .toggle-sm::after { content:''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.2s; }
         .toggle-sm.checked::after { transform: translateX(16px); }
+
+        @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+        .animate-slide-down { animation: slide-down 0.2s ease-out; }
     </style>
 </head>
 <body>
@@ -124,11 +130,14 @@
         const vibrate = () => { if (navigator.vibrate) navigator.vibrate(10); };
 
         const Icon = ({ d, size = 24, className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d={d} /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d={d} />
+            </svg>
         );
+
         const ICONS = {
             Flask: "M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2M8.5 2h7M7 16h10",
-            Brain: "M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z",
+            Brain: "M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z M14.5 2A2.5 2.5 0 0 1 17 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 14.5 2Z",
             Tools: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
             Folder: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z",
             Lock: "M7 11V7a5 5 0 0 1 10 0v4M3 11h18v11H3z", 
@@ -137,16 +146,16 @@
             Plus: "M12 5v14M5 12h14",
             Share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
             Drop: "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z",
-            Trash: "M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2",
+            Trash: "M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M9 9v8M15 9v8",
             Bolt: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
             Microscope: "M6 18h8M3 22h18M14 22a7 7 0 1 0 0-14h-1M9 14h2M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2ZM12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3",
             Refresh: "M23 4v6h-6M1 20v-6h6M20.49 15a9 9 0 1 1-2.12-9.36L23 10",
-            Edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7",
-            Target: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a6 6 0 1 1 6-6 6 6 0 0 1-6 6z",
+            Edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M17.5 2.5a2.121 2.121 0 0 1 3 3L11 19H8v-3L17.5 2.5z",
+            Target: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a6 6 0 1 1 6-6 6 6 0 0 1-6 6zm0-9a3 3 0 1 0 3 3 3 3 0 0 0-3-3z",
             Download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
             Save: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8",
-            EditPen: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z",
-            Star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            Star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+            Wand: "M15 4V2m0 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"
         };
 
         const DEFAULT_INGREDIENTS = [
@@ -168,7 +177,7 @@
         );
 
         const NumInput = ({ label, value, onChange, suffix, enabled, onToggle, className }) => (
-            <div className={`bg-gray-50 rounded-xl p-3 flex flex-col justify-center border transition-colors ${enabled===false ? 'opacity-50 border-gray-100' : 'border-blue-100 bg-white'} ${className}`}>
+            <div className={`bg-gray-50 rounded-xl p-3 flex flex-col justify-center border transition-colors ${enabled===false ? 'opacity-50 border-gray-100' : 'border-blue-100 bg-white'} ${className || ''}`}>
                 <div className="flex justify-between items-center mb-1">
                     <div className="text-[10px] text-gray-400 font-bold uppercase">{label}</div>
                     {onToggle && (
@@ -178,7 +187,7 @@
                     )}
                 </div>
                 <div className="flex items-center">
-                    <input type="number" value={value} onChange={onChange} disabled={enabled===false} className="w-full bg-transparent font-mono text-2xl font-bold outline-none text-gray-800" placeholder="-"/>
+                    <input type="number" value={value} onChange={onChange} disabled={enabled===false} className="w-full bg-transparent font-mono text-2xl font-bold outline-none text-gray-800" placeholder="0" />
                     {suffix && <span className="text-xs text-gray-400 ml-1">{suffix}</span>}
                 </div>
             </div>
@@ -193,8 +202,8 @@
             };
             return (
                 <div className={`flex items-center gap-1 h-12 rounded-xl ${disabled ? '' : 'bg-blue-50/50 input-focus'}`}>
-                    <button onClick={(e) => {e.stopPropagation(); handleStep(-1)}} disabled={disabled} className="stepper-btn">-</button>
-                    <input type="number" value={value} disabled={disabled} onChange={onChange} className={`flex-1 text-center font-mono text-xl font-bold bg-transparent outline-none ${disabled ? 'text-gray-400' : 'text-blue-700'}`} />
+                    <button onClick={(e) => {e.stopPropagation(); handleStep(-1)}} disabled={disabled} className="stepper-btn">−</button>
+                    <input type="number" value={value} disabled={disabled} onChange={onChange} className={`flex-1 text-center font-mono text-xl font-bold bg-transparent outline-none ${disabled ? 'text-gray-400' : ''}`} />
                     <button onClick={(e) => {e.stopPropagation(); handleStep(1)}} disabled={disabled} className="stepper-btn">+</button>
                 </div>
             );
@@ -205,7 +214,7 @@
             const [activeTab, setActiveTab] = useState('ai'); 
             
             const [library, setLibrary] = useState(() => JSON.parse(localStorage.getItem('v14_lib')) || DEFAULT_INGREDIENTS);
-            const [formula, setFormula] = useState(() => JSON.parse(localStorage.getItem('v14_formula')) || [{...DEFAULT_INGREDIENTS[0], uuid:'1', weight:850, locked:false}, {...DEFAULT_INGREDIENTS[5], uuid:'2', weight:60, locked:true}]);
+            const [formula, setFormula] = useState(() => JSON.parse(localStorage.getItem('v14_formula')) || [{...DEFAULT_INGREDIENTS[0], uuid:'1', weight:850, locked:false}, {...DEFAULT_INGREDIENTS[1], uuid:'2', weight:150, locked:false}]);
             const [targets, setTargets] = useState(() => JSON.parse(localStorage.getItem('v14_targets')) || {fat:3.5, pro:3.0, ts:12.0, se: 7.0, enableTs: true, enableSe: true});
             const [batchSize, setBatchSize] = useState(() => parseFloat(localStorage.getItem('v14_batch')) || 1000);
             const [productMode, setProductMode] = useState(() => localStorage.getItem('v14_pmode') || 'liquid');
@@ -270,7 +279,7 @@
                 let wIdx = formula.findIndex(i => i.id === 'wat');
                 if (wIdx === -1) wIdx = formula.findIndex(i => i.name.includes('水'));
                 if (wIdx === -1) {
-                    const waterLib = library.find(i => i.id === 'wat') || { id: 'wat', name: '工艺水', fat:0, protein:0, ts:0, price:0.005 };
+                    const waterLib = library.find(i => i.id === 'wat') || { id: 'wat', name: '工艺水', fat:0, protein:0, ts:0, price:0.005, sweet:0, visc:0 };
                     const newWater = { ...waterLib, uuid: Date.now().toString(), weight: 0 };
                     const newF = [...formula, newWater];
                     const activeF = (isYogurt && baseView) ? newF.filter(i => !i.isPost) : newF;
@@ -296,7 +305,13 @@
                 navigator.clipboard.writeText(txt).then(()=>showToast("已复制"));
             };
             
-            const calcCultureWeight = () => { const batchInTon = batchSize / 1000000; const totalDCU = batchInTon * cultureCalc.dcuPerTon; const grams = (totalDCU / cultureCalc.pouchSize) * cultureCalc.pouchWeight; return isNaN(grams) ? 0 : grams; };
+            const calcCultureWeight = () => { 
+                const batchInTon = batchSize / 1000000; 
+                const totalDCU = batchInTon * cultureCalc.dcuPerTon; 
+                const pouches = totalDCU / cultureCalc.pouchSize;
+                const grams = pouches * cultureCalc.pouchWeight;
+                return grams.toFixed(2);
+            };
 
             // --- Auto Pilot Algorithm (Heuristic + Optimization) ---
             const runAutoPilot = () => {
@@ -308,32 +323,43 @@
                 
                 // If user manually selected, use those
                 if (genSelected.length > 0) {
-                    pool = genSelected.map(id => library.find(l => l.id === id));
+                    pool = genSelected.map(id => library.find(l => l.id === id)).filter(Boolean);
                 } else {
                     // AUTO-RECOMMENDATION LOGIC
                     // Add base
                     pool.push(library.find(i => i.id === 'rm') || library[0]);
                     
                     // Need Fat?
-                    if (targets.fat > 3.5) pool.push(library.find(i => i.id === 'cr') || library.find(i => i.fat > 30));
+                    if (targets.fat > 3.5) {
+                        const fatIng = library.find(i => i.id === 'cr') || library.find(i => i.fat > 30);
+                        if (fatIng) pool.push(fatIng);
+                    }
                     
                     // Need Protein?
                     if (targets.pro > 3.1) {
                         // Prioritize WPC for efficiency, SMP for bulk
-                        pool.push(library.find(i => i.id === 'wpc') || library.find(i => i.protein > 50));
-                        if (targets.ts > 12) pool.push(library.find(i => i.id === 'smp'));
+                        const proteinIng = library.find(i => i.id === 'wpc') || library.find(i => i.protein > 50);
+                        if (proteinIng) pool.push(proteinIng);
+                        if (targets.ts > 12) {
+                            const smpIng = library.find(i => i.id === 'smp');
+                            if (smpIng) pool.push(smpIng);
+                        }
                     }
                     
                     // Need Sweetness?
                     if (isYogurt && targets.se > 0 && targets.enableSe) {
-                         pool.push(library.find(i => i.id === 'suc'));
+                        const sweetIng = library.find(i => i.id === 'suc');
+                        if (sweetIng) pool.push(sweetIng);
                     }
                     
                     // Stabilizer?
-                    if (isYogurt) pool.push(library.find(i => i.id === 'stab'));
+                    if (isYogurt) {
+                        const stabIng = library.find(i => i.id === 'stab');
+                        if (stabIng) pool.push(stabIng);
+                    }
                     
                     // Dedupe and clean
-                    pool = [...new Set(pool.filter(Boolean))];
+                    pool = [...new Set(pool.filter(Boolean).map(p => JSON.stringify(p)))].map(p => JSON.parse(p));
                 }
 
                 setTimeout(() => {
@@ -421,21 +447,21 @@
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-lg"><Icon d={ICONS.Target} size={20} className="text-blue-600"/> 目标设定</h3>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <NumInput label="脂肪 FAT%" value={targets.fat} onChange={e=>setTargets({...targets, fat:parseFloat(e.target.value)})} />
-                            <NumInput label="蛋白 PRO%" value={targets.pro} onChange={e=>setTargets({...targets, pro:parseFloat(e.target.value)})} />
-                            <NumInput label="总固 TS%" value={targets.ts} onChange={e=>setTargets({...targets, ts:parseFloat(e.target.value)})} enabled={targets.enableTs} onToggle={()=>setTargets({...targets, enableTs:!targets.enableTs})} />
-                            {isYogurt && <NumInput label="甜度 SE" value={targets.se} onChange={e=>setTargets({...targets, se:parseFloat(e.target.value)})} enabled={targets.enableSe} onToggle={()=>setTargets({...targets, enableSe:!targets.enableSe})} />}
+                            <NumInput label="脂肪 FAT%" value={targets.fat} onChange={e=>setTargets({...targets, fat:parseFloat(e.target.value)||0})} />
+                            <NumInput label="蛋白 PRO%" value={targets.pro} onChange={e=>setTargets({...targets, pro:parseFloat(e.target.value)||0})} />
+                            <NumInput label="总固 TS%" value={targets.ts} onChange={e=>setTargets({...targets, ts:parseFloat(e.target.value)||0})} enabled={targets.enableTs} onToggle={()=>setTargets({...targets, enableTs:!targets.enableTs})} />
+                            {isYogurt && <NumInput label="甜度 SE" value={targets.se} onChange={e=>setTargets({...targets, se:parseFloat(e.target.value)||0})} enabled={targets.enableSe} onToggle={()=>setTargets({...targets, enableSe:!targets.enableSe})} />}
                         </div>
                         <div className="text-xs text-gray-500 mb-3 font-bold">选择原料池 (可选):</div>
                         <div className="grid grid-cols-3 gap-3 mb-6">
                             {library.map(ing => (
                                 <div key={ing.id} onClick={() => {vibrate(); setGenSelected(prev => prev.includes(ing.id)?prev.filter(i=>i!==ing.id):[...prev,ing.id])}} 
-                                     className={`p-3 rounded-xl text-xs font-bold text-center transition-all border ${genSelected.includes(ing.id)?'bg-purple-50 border-purple-200 text-purple-700':'bg-gray-50 border-transparent text-gray-500'}`}>
+                                     className={`p-3 rounded-xl text-xs font-bold text-center transition-all border cursor-pointer ${genSelected.includes(ing.id)?'bg-purple-50 border-purple-200 text-purple-700':'bg-gray-50 border-gray-200 text-gray-600'}`}>
                                     {ing.name}
                                 </div>
                             ))}
                         </div>
-                        <button onClick={runAutoPilot} disabled={isSolving} className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 active:scale-95 transition-transform text-lg">
+                        <button onClick={runAutoPilot} disabled={isSolving} className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-all active:scale-95">
                             <Icon d={ICONS.Wand} size={22}/> {isSolving?'AI 计算中...':(genSelected.length>0 ? '生成指定配方' : '🚀 AI 自动推荐配方')}
                         </button>
                         <p className="text-[10px] text-gray-400 text-center mt-3">不选原料时，AI 将自动匹配最佳组合</p>
@@ -447,10 +473,10 @@
                 <div className="space-y-4 animate-slide-up pb-24">
                     <div className="flex justify-between items-center px-1">
                          <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-100">
-                             <button onClick={()=>setViewMode('calc')} className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${viewMode==='calc'?'bg-gray-100 text-blue-600':'text-gray-400'}`}>占比</button>
+                             <button onClick={()=>setViewMode('calc')} className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${viewMode==='calc'?'bg-gray-100 text-blue-600':'text-gray-400'}`}>计算</button>
                              <button onClick={()=>setViewMode('cost')} className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${viewMode==='cost'?'bg-gray-100 text-green-600':'text-gray-400'}`}>成本</button>
                          </div>
-                         <button onClick={balanceWater} className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg active:scale-95 transition-transform"><Icon d={ICONS.Drop} size={14}/> 一键补水</button>
+                         <button onClick={balanceWater} className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg active:scale-95 transition-transform"><Icon d={ICONS.Drop} size={16}/> 补水</button>
                     </div>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {formula.length === 0 ? <div className="p-10 text-center text-gray-400 text-sm">暂无原料，请去智能页生成</div> : formula.map(item => {
@@ -458,27 +484,28 @@
                             return (
                                 <div key={item.uuid} className={`list-row ${item.locked?'locked-bg':''} ${item.isPost?'post-add-bg':''}`} onClick={() => setEditId(editId===item.uuid?null:item.uuid)}>
                                     <div className="flex items-center gap-3 w-28">
-                                        <button onClick={(e) => {e.stopPropagation(); updateItem(item.uuid, 'locked', !item.locked); vibrate();}} className={`text-gray-300 transition-colors ${item.locked ? 'text-amber-500' : 'hover:text-gray-400'}`}>
+                                        <button onClick={(e) => {e.stopPropagation(); updateItem(item.uuid, 'locked', !item.locked); vibrate();}} className={`text-gray-300 transition-colors ${item.locked?'text-blue-600':'text-gray-300'}`}>
                                             <Icon d={item.locked ? ICONS.Lock : ICONS.Unlock} size={16}/>
                                         </button>
                                         <div className="flex-1">
-                                            <div className={`font-bold text-sm truncate ${item.locked?'text-gray-500':'text-gray-800'}`}>{item.name}{item.isPost && <span className="text-[8px] bg-purple-100 text-purple-600 px-1.5 rounded ml-1">后</span>}</div>
-                                            <div className="text-[9px] text-gray-400 font-mono mt-0.5">F{item.fat} P{item.protein}</div>
+                                            <div className={`font-bold text-sm truncate ${item.locked?'text-gray-500':'text-gray-800'}`}>{item.name}{item.isPost && <span className="text-[8px] bg-purple-100 text-purple-600 px-1 rounded ml-1">后加</span>}</div>
+                                            <div className="text-[9px] text-gray-400 font-mono mt-0.5">F{(item.fat||0).toFixed(1)} P{(item.protein||0).toFixed(1)}</div>
                                         </div>
                                     </div>
-                                    <div className="flex-1 px-2"><StepperInput value={item.weight} disabled={item.locked} onChange={(e) => !item.locked && updateItem(item.uuid, 'weight', e.target.value)} /></div>
+                                    <div className="flex-1 px-2"><StepperInput value={item.weight} disabled={item.locked} onChange={(e) => !item.locked && updateItem(item.uuid, 'weight', parseFloat(e.target.value)||0)} /></div>
                                     <div className="w-16 flex flex-col items-end justify-center relative pl-1">
-                                        <div className="font-bold text-xs text-gray-700 font-mono">{viewMode==='cost' ? `¥${item.price}` : (res.w>0?(item.weight/res.w*100).toFixed(1)+'%':'0%')}</div>
+                                        <div className="font-bold text-xs text-gray-700 font-mono">{viewMode==='cost' ? `¥${(item.price||0).toFixed(1)}` : (res.w>0?(item.weight/res.w*100).toFixed(1)+'%':'0%')}</div>
                                         <button onClick={(e)=>{e.stopPropagation(); delItem(item.uuid)}} className="text-gray-300 p-1 hover:text-red-500"><Icon d={ICONS.X} size={14}/></button>
-                                        {viewMode==='cost' && <div className="cost-bar" style={{width: `${(item.weight*item.price)/(res.cost||1)*100}%`}}></div>}
+                                        {viewMode==='cost' && <div className="cost-bar" style={{width: `${(item.weight*(item.price||0))/(res.cost||1)*100}%`}}></div>}
                                     </div>
                                     {editId === item.uuid && (
                                         <div className="w-full pt-3 pb-1 animate-slide-down border-t border-gray-50 mt-2" onClick={e=>e.stopPropagation()}>
                                             <div className="flex justify-between mb-2 px-1">
-                                                {isYogurt && <button onClick={()=>updateItem(item.uuid,'isPost',!item.isPost)} className="text-xs bg-purple-50 px-3 py-1.5 rounded-lg text-purple-600 font-bold">{item.isPost?'设为基料':'设为后添加'}</button>}
+                                                {isYogurt && <button onClick={()=>updateItem(item.uuid,'isPost',!item.isPost)} className="text-xs bg-purple-50 px-3 py-1.5 rounded-lg text-purple-600 font-bold">后加: {item.isPost?'是':'否'}</button>}
+                                                <button onClick={() => copyReport()} className="text-xs bg-gray-50 px-3 py-1.5 rounded-lg text-gray-600 font-bold">复制</button>
                                             </div>
                                             <div className="grid grid-cols-4 gap-2">
-                                                {['fat','protein','ts','price'].map(k=><div key={k} className="bg-gray-50 p-1 rounded text-center"><div className="text-[8px] text-gray-400 uppercase">{k.substr(0,3)}</div><input className="w-full bg-transparent text-center font-bold text-xs" value={item[k]} onChange={e=>updateItem(item.uuid,k,e.target.value)}/></div>)}
+                                                {['fat','protein','ts','price'].map(k=><div key={k} className="bg-gray-50 p-1 rounded text-center"><div className="text-[8px] text-gray-400 uppercase">{k.substring(0,3)}</div><div className="text-sm font-bold text-gray-800">{(item[k]||0).toFixed(1)}</div></div>)}
                                             </div>
                                         </div>
                                     )}
@@ -492,26 +519,26 @@
                          <div><div className="text-[10px] text-gray-400 font-bold">TS</div><div className="text-lg font-black text-gray-800">{res.ts.toFixed(2)}</div></div>
                          <div><div className="text-[10px] text-gray-400 font-bold">成本</div><div className="text-lg font-black text-green-600">¥{res.costPerKg.toFixed(1)}</div></div>
                     </div>
-                    <button onClick={() => { vibrate(); setShowAdd(true); }} className="mt-4 w-full h-12 rounded-2xl border-2 border-dashed border-blue-200 text-blue-500 font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform bg-white"><Icon d={ICONS.Plus} size={20}/> 添加原料</button>
+                    <button onClick={() => { vibrate(); setShowAdd(true); }} className="mt-4 w-full h-12 rounded-2xl border-2 border-dashed border-blue-200 text-blue-500 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"><Icon d={ICONS.Plus} size={20}/> 添加原料</button>
                 </div>
             );
 
             const renderTools = () => (
                 <div className="grid grid-cols-2 gap-3 animate-slide-up pb-24">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100" onClick={()=>alert(`需称取菌种: ${(batchSize/1e6*cultureCalc.dcuPerTon/cultureCalc.pouchSize*cultureCalc.pouchWeight).toFixed(4)}g`)}>
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer active:scale-95 transition-transform" onClick={()=>alert(`需称取菌种: ${calcCultureWeight()}g`)}>
                         <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-2"><Icon d={ICONS.Microscope} size={24}/></div>
                         <div className="font-bold text-sm text-gray-800">菌种计算</div>
                         <div className="text-[10px] text-gray-400 mt-1">点击计算添加量</div>
                     </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer">
                         <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-2"><Icon d={ICONS.Flask} size={24}/></div>
                         <div className="font-bold text-sm text-gray-800">酸度换算</div>
-                        <div className="text-[10px] text-gray-400 mt-1">{acidity.t}°T ≈ {(acidity.t*0.009).toFixed(2)}%</div>
+                        <div className="text-[10px] text-gray-400 mt-1">{(acidity.t||70).toFixed(1)}°T ≈ {((acidity.t||70)*0.009).toFixed(2)}%</div>
                     </div>
                     <div className="col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                         <h3 className="font-bold text-sm text-gray-800 mb-3">FOSS 验证</h3>
                         <div className="grid grid-cols-3 gap-2">
-                            {['fat','protein','ts'].map(k=><NumInput key={k} label={k.toUpperCase()} value={fossReadings[k]} onChange={e=>setFossReadings({...fossReadings, [k]:parseFloat(e.target.value)})} />)}
+                            {['fat','protein','ts'].map(k=><NumInput key={k} label={k.toUpperCase()} value={fossReadings[k]} onChange={e=>setFossReadings({...fossReadings, [k]:parseFloat(e.target.value)||0})} />)}
                         </div>
                     </div>
                 </div>
@@ -519,7 +546,7 @@
 
             const renderFiles = () => (
                 <div className="space-y-4 animate-slide-up pb-24">
-                     <div className="bg-blue-600 text-white rounded-3xl p-6 shadow-lg flex items-center justify-between active:scale-95 transition-transform" onClick={handleSave}>
+                     <div className="bg-blue-600 text-white rounded-3xl p-6 shadow-lg flex items-center justify-between active:scale-95 transition-transform cursor-pointer" onClick={handleSave}>
                          <div><div className="font-bold text-xl">一键保存当前</div><div className="text-blue-200 text-xs mt-1">自动命名为 配方{savedRecipes.length+1}</div></div>
                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"><Icon d={ICONS.Save} size={24}/></div>
                      </div>
@@ -529,12 +556,12 @@
                          {savedRecipes.map(r => (
                              <div key={r.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl mb-3 border border-gray-100">
                                  <div className="flex-1">
-                                     <div className="font-bold text-gray-800 text-lg flex items-center gap-2">{r.name} <button onClick={(e)=>{e.stopPropagation(); handleRename(r.id)}} className="text-gray-400"><Icon d={ICONS.EditPen} size={14}/></button></div>
+                                     <div className="font-bold text-gray-800 text-lg flex items-center gap-2">{r.name} <button onClick={(e)=>{e.stopPropagation(); handleRename(r.id)}} className="text-[10px] text-gray-400 hover:text-blue-600"><Icon d={ICONS.Edit} size={14}/></button></div>
                                      <div className="text-[10px] text-gray-400 mt-1 font-mono">{r.date}</div>
                                  </div>
                                  <div className="flex gap-3 items-center">
-                                     <button onClick={() => handleLoadRecipe(r)} className="text-xs bg-white border border-gray-200 px-4 py-2 rounded-xl font-bold text-blue-600 shadow-sm active:scale-95">读取</button>
-                                     <button onClick={(e)=>{e.stopPropagation(); handleDeleteRecipe(r.id)}} className="text-gray-300 hover:text-red-500"><Icon d={ICONS.Trash} size={18}/></button>
+                                     <button onClick={() => handleLoadRecipe(r)} className="text-xs bg-white border border-gray-200 px-4 py-2 rounded-xl font-bold text-blue-600 shadow-sm active:scale-95 transition-transform">读取</button>
+                                     <button onClick={(e)=>{e.stopPropagation(); handleDeleteRecipe(r.id)}} className="text-gray-300 hover:text-red-500 cursor-pointer"><Icon d={ICONS.Trash} size={18}/></button>
                                  </div>
                              </div>
                          ))}
@@ -548,15 +575,15 @@
                     <header className="fixed top-0 left-0 right-0 z-50 header-glass pt-safe pb-3 px-4">
                         <div className="flex justify-between items-center h-10">
                             <div className="flex bg-gray-100 rounded-lg p-0.5">
-                                <button onClick={()=>{vibrate();setProductMode('liquid')}} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${!isYogurt?'bg-white shadow text-blue-600':'text-gray-400'}`}>液奶</button>
-                                <button onClick={()=>{vibrate();setProductMode('yogurt')}} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${isYogurt?'bg-white shadow text-purple-600':'text-gray-400'}`}>酸奶</button>
+                                <button onClick={()=>{vibrate();setProductMode('liquid')}} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${!isYogurt?'bg-white shadow text-blue-600':'text-gray-500'}`}>乳饮</button>
+                                <button onClick={()=>{vibrate();setProductMode('yogurt')}} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${isYogurt?'bg-white shadow text-purple-600':'text-gray-500'}`}>酸奶</button>
                             </div>
                             <div className={`flex items-center bg-gray-100 rounded-lg px-3 h-9 transition-colors ${isLocked ? 'opacity-60' : ''} w-32`}>
-                                <input type="number" value={batchSize} disabled={isLocked} onChange={e => setBatchSize(parseFloat(e.target.value))} className="bg-transparent flex-1 font-mono font-bold text-base text-right outline-none text-gray-800"/>
+                                <input type="number" value={batchSize} disabled={isLocked} onChange={e => setBatchSize(parseFloat(e.target.value)||1000)} className="bg-transparent flex-1 font-mono font-bold text-xs outline-none" placeholder="1000" />
                                 <span className="text-xs font-bold text-gray-400 ml-1">g</span>
                                 <button onClick={() => { vibrate(); setIsLocked(!isLocked); }} className="ml-2 text-gray-400"><Icon d={isLocked ? ICONS.Lock : ICONS.Unlock} size={14}/></button>
                             </div>
-                            <button onClick={normalize} className="h-9 w-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center tap-active shadow-sm border border-blue-100 font-bold text-xs">归</button>
+                            <button onClick={normalize} className="h-9 w-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center tap-active shadow-sm border border-blue-100 font-bold active:scale-90 transition-transform"><Icon d={ICONS.Refresh} size={16}/></button>
                         </div>
                     </header>
 
@@ -578,7 +605,7 @@
                         <div className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm flex items-end" onClick={() => setShowAdd(false)}>
                             <div className="bg-white w-full rounded-t-2xl p-4 h-[60vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
                                 <div className="font-bold text-lg mb-4 text-center text-gray-800">原料库</div>
-                                <div className="grid grid-cols-2 gap-3">{library.map(ing => (<div key={ing.id} onClick={() => addItem(ing)} className="p-3 bg-gray-50 rounded-xl tap-active border border-transparent active:border-blue-200"><div className="font-bold text-gray-800">{ing.name}</div><div className="text-[10px] text-gray-400 mt-1 font-mono">F{ing.fat} P{ing.protein}</div></div>))}</div>
+                                <div className="grid grid-cols-2 gap-3">{library.map(ing => (<div key={ing.id} onClick={() => addItem(ing)} className="p-3 bg-gray-50 rounded-xl tap-active border border-gray-200 text-center font-bold text-sm text-gray-700"><div>{ing.name}</div><div className="text-[10px] text-gray-400 mt-1">F{(ing.fat||0).toFixed(1)} P{(ing.protein||0).toFixed(1)}</div></div>))}</div>
                             </div>
                         </div>
                     )}

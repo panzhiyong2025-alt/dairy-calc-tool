@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>乳品研发计算器 Pro Max</title>
+    <title>乳品研发计算器 Ultimate</title>
     
     <!-- PWA 配置 -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
             --primary: #0052D9;
-            --bg: #F0F2F5; /* 背景稍微加深，突显卡片 */
+            --bg: #F0F2F5;
         }
         body {
             background-color: var(--bg);
@@ -46,7 +46,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
         
-        .pt-safe { padding-top: calc(var(--safe-top) + 4px); }
+        .pt-safe { padding-top: calc(var(--safe-top) + 16px); }
         .pb-safe { padding-bottom: calc(var(--safe-bottom) + 10px); }
         .tap-active:active { transform: scale(0.96); opacity: 0.8; transition: transform 0.1s; }
         
@@ -70,12 +70,10 @@
             position: relative;
             transition: background-color 0.2s;
         }
-        /* 锁定状态样式 */
-        .list-row.locked-bg {
-            background-color: #F9FAFB;
-        }
+        .list-row.locked-bg { background-color: #F9FAFB; }
+        /* 后添加原料背景微调 */
+        .list-row.post-add-bg { background-color: #EFF6FF; }
         
-        /* 步进器样式优化 */
         .stepper-btn {
             width: 36px;
             height: 36px;
@@ -94,15 +92,28 @@
         
         .input-focus:focus-within { background: #fff; box-shadow: 0 0 0 2px var(--primary); z-index: 10; }
         
-        /* 成本条 */
-        .cost-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 3px;
-            background: #10B981;
-            opacity: 0.4;
+        .cost-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: #10B981; opacity: 0.4; }
+
+        /* Checkbox Style */
+        .chk-round {
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #D1D5DB;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
         }
+        .chk-round.checked { background: #0052D9; border-color: #0052D9; }
+        .chk-round.checked::after { content: ''; width: 8px; height: 5px; border-left: 2px solid white; border-bottom: 2px solid white; transform: rotate(-45deg) translate(1px, -1px); }
+        
+        @keyframes slide-down-sm { from { opacity:0; transform: translateY(-5px); } to { opacity:1; transform: translateY(0); } }
+        .animate-slide-down { animation: slide-down-sm 0.2s ease-out; }
+
+        /* Yogurt Mode Toggle Switch */
+        .toggle-switch {
+            position: relative; width: 36px; height: 20px; background: #E5E7EB; border-radius: 20px; transition: all 0.3s;
+        }
+        .toggle-switch.active { background: #0052D9; }
+        .toggle-switch::after {
+            content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.3s;
+        }
+        .toggle-switch.active::after { transform: translateX(16px); }
     </style>
 </head>
 <body>
@@ -138,20 +149,25 @@
             Drop: "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z",
             Trash: "M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2",
             Folder: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z",
-            Refresh: "M23 4v6h-6M1 20v-6h6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"
+            Bolt: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+            Tool: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
+            Flask: "M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2M8.5 2h7M7 16h10"
         };
 
         const DEFAULT_INGREDIENTS = [
-            { id: 'rm', name: '生牛乳', fat: 3.8, protein: 3.1, ts: 12.5, price: 4.5 },
-            { id: 'cr', name: '稀奶油38', fat: 38.0, protein: 2.2, ts: 45.0, price: 35.0 },
-            { id: 'smp', name: '脱脂粉', fat: 0.8, protein: 34.0, ts: 96.0, price: 28.0 },
-            { id: 'wmp', name: '全脂粉', fat: 26.0, protein: 24.0, ts: 96.0, price: 32.0 },
-            { id: 'wpc', name: 'WPC80', fat: 6.0, protein: 80.0, ts: 95.0, price: 65.0 },
-            { id: 'suc', name: '白砂糖', fat: 0.0, protein: 0.0, ts: 99.8, price: 6.5 },
-            { id: 'wat', name: '工艺水', fat: 0.0, protein: 0.0, ts: 0.0, price: 0.005 },
+            { id: 'rm', name: '生牛乳', fat: 3.8, protein: 3.1, ts: 12.5, price: 4.5, sweet: 0 },
+            { id: 'cr', name: '稀奶油38', fat: 38.0, protein: 2.2, ts: 45.0, price: 35.0, sweet: 0 },
+            { id: 'smp', name: '脱脂粉', fat: 0.8, protein: 34.0, ts: 96.0, price: 28.0, sweet: 0 },
+            { id: 'wmp', name: '全脂粉', fat: 26.0, protein: 24.0, ts: 96.0, price: 32.0, sweet: 0 },
+            { id: 'wpc', name: 'WPC80', fat: 6.0, protein: 80.0, ts: 95.0, price: 65.0, sweet: 0 },
+            { id: 'suc', name: '白砂糖', fat: 0.0, protein: 0.0, ts: 99.8, price: 6.5, sweet: 1.0 },
+            { id: 'ery', name: '赤藓糖醇', fat: 0.0, protein: 0.0, ts: 99.0, price: 15.0, sweet: 0.65 },
+            { id: 'stab', name: '复配稳定剂', fat: 0.0, protein: 0.0, ts: 95.0, price: 45.0, sweet: 0 },
+            { id: 'jam', name: '草莓果酱', fat: 0.0, protein: 0.3, ts: 45.0, price: 12.0, sweet: 0.4, isPost: true },
+            { id: 'wat', name: '工艺水', fat: 0.0, protein: 0.0, ts: 0.0, price: 0.005, sweet: 0 },
         ];
 
-        // 优化后的微调输入组件 (按钮不消失，变灰)
+        // Stepper Input Component
         const StepperInput = ({ value, onChange, disabled, className }) => {
             const handleStep = (delta) => {
                 if (disabled) return;
@@ -176,31 +192,51 @@
 
         const App = () => {
             // State
-            const [library, setLibrary] = useState(() => JSON.parse(localStorage.getItem('v5_lib')) || DEFAULT_INGREDIENTS);
-            const [formula, setFormula] = useState(() => JSON.parse(localStorage.getItem('v5_formula')) || [{...DEFAULT_INGREDIENTS[0], uuid:'1', weight:850, locked:false}, {...DEFAULT_INGREDIENTS[5], uuid:'2', weight:60, locked:true}]);
-            const [targets, setTargets] = useState(() => JSON.parse(localStorage.getItem('v5_targets')) || {fat:3.5, pro:3.0, ts:12.0});
-            const [batchSize, setBatchSize] = useState(() => parseFloat(localStorage.getItem('v5_batch')) || 1000);
-            const [isLocked, setIsLocked] = useState(() => JSON.parse(localStorage.getItem('v5_locked')) || false);
-            const [savedRecipes, setSavedRecipes] = useState(() => JSON.parse(localStorage.getItem('v5_recipes')) || []);
+            const [library, setLibrary] = useState(() => JSON.parse(localStorage.getItem('v7_lib')) || DEFAULT_INGREDIENTS);
+            const [formula, setFormula] = useState(() => JSON.parse(localStorage.getItem('v7_formula')) || [{...DEFAULT_INGREDIENTS[0], uuid:'1', weight:850, locked:false}, {...DEFAULT_INGREDIENTS[5], uuid:'2', weight:60, locked:true}]);
+            const [targets, setTargets] = useState(() => JSON.parse(localStorage.getItem('v7_targets')) || {fat:3.5, pro:3.0, ts:12.0});
+            const [batchSize, setBatchSize] = useState(() => parseFloat(localStorage.getItem('v7_batch')) || 1000);
+            const [isLocked, setIsLocked] = useState(() => JSON.parse(localStorage.getItem('v7_locked')) || false);
+            const [savedRecipes, setSavedRecipes] = useState(() => JSON.parse(localStorage.getItem('v7_recipes')) || []);
+            const [yogurtMode, setYogurtMode] = useState(() => JSON.parse(localStorage.getItem('v7_ymode')) || false);
+            const [baseView, setBaseView] = useState(true); // true=Base, false=Final
             
-            const [uiState, setUiState] = useState({ showAdd: false, showTargets: false, showRecipes: false, editId: null, mode: 'calc' });
+            // UI State
+            const [uiState, setUiState] = useState({ showAdd: false, showTargets: false, showGen: false, showRecipes: false, showTools: false, editId: null, mode: 'calc' });
             const [isSolving, setIsSolving] = useState(false);
+            const [genSelected, setGenSelected] = useState([]);
+            
+            // Tools State
+            const [cultureCalc, setCultureCalc] = useState({ dcuPerTon: 50, pouchSize: 50, pouchWeight: 10 }); // DCU/T, DCU/Bag, g/Bag
+            const [acidity, setAcidity] = useState({ t: 70 }); 
 
             useEffect(() => {
-                localStorage.setItem('v5_lib', JSON.stringify(library));
-                localStorage.setItem('v5_formula', JSON.stringify(formula));
-                localStorage.setItem('v5_targets', JSON.stringify(targets));
-                localStorage.setItem('v5_batch', batchSize);
-                localStorage.setItem('v5_locked', isLocked);
-                localStorage.setItem('v5_recipes', JSON.stringify(savedRecipes));
-            }, [library, formula, targets, batchSize, isLocked, savedRecipes]);
+                localStorage.setItem('v7_lib', JSON.stringify(library));
+                localStorage.setItem('v7_formula', JSON.stringify(formula));
+                localStorage.setItem('v7_targets', JSON.stringify(targets));
+                localStorage.setItem('v7_batch', batchSize);
+                localStorage.setItem('v7_locked', isLocked);
+                localStorage.setItem('v7_recipes', JSON.stringify(savedRecipes));
+                localStorage.setItem('v7_ymode', yogurtMode);
+            }, [library, formula, targets, batchSize, isLocked, savedRecipes, yogurtMode]);
 
             // Core Calculation
             const res = useMemo(() => {
-                let W=0, F=0, P=0, T=0, C=0;
-                formula.forEach(i => {
+                let W=0, F=0, P=0, T=0, C=0, S=0;
+                
+                // 过滤逻辑：如果是酸奶模式且看基料，排除后添加原料
+                const activeItems = (yogurtMode && baseView) 
+                    ? formula.filter(i => !i.isPost) 
+                    : formula;
+
+                activeItems.forEach(i => {
                     const w = parseFloat(i.weight)||0;
-                    W+=w; F+=w*(i.fat||0); P+=w*(i.protein||0); T+=w*(i.ts||0); C+=w*(i.price||0);
+                    W+=w; 
+                    F+=w*(i.fat||0); 
+                    P+=w*(i.protein||0); 
+                    T+=w*(i.ts||0); 
+                    C+=w*(i.price||0);
+                    S+=w*(i.sweet||0); // 累加甜度贡献
                 });
                 const safeW = W || 1;
                 return {
@@ -209,98 +245,138 @@
                     pro: P/safeW,
                     ts: T/safeW,
                     pf: F>0 ? P/F : 0,
-                    costPerKg: C/safeW
+                    cost: C,
+                    costPerKg: C/safeW,
+                    sweetness: S/safeW // 相对甜度
                 };
-            }, [formula]);
+            }, [formula, yogurtMode, baseView]);
 
             const updateItem = (uuid, k, v) => setFormula(formula.map(i => i.uuid===uuid ? {...i, [k]: v} : i));
             const delItem = (uuid) => { vibrate(); setFormula(formula.filter(i => i.uuid!==uuid)); };
-            const addLibItem = (item) => { vibrate(); setFormula([...formula, {...item, uuid: Date.now().toString(), weight:0, locked:false}]); setUiState({...uiState, showAdd:false}); };
+            const addLibItem = (item) => { vibrate(); setFormula([...formula, {...item, uuid: Date.now().toString(), weight:0, locked:false, isPost: !!item.isPost}]); setUiState({...uiState, showAdd:false}); };
+            const updateLibraryItem = (id, k, v) => setLibrary(library.map(l => l.id === id ? { ...l, [k]: parseFloat(v)||0 } : l));
             
             const normalize = () => {
                 vibrate();
                 if(res.w === 0) return;
+                // 归一化时，如果是基料视图，只调整基料？通常归一化是针对全配方
+                // 这里简化处理：始终对显示列表里的原料按比例缩放
                 const ratio = batchSize / res.w;
-                setFormula(formula.map(i => ({...i, weight: parseFloat((i.weight*ratio).toFixed(2))})));
+                const newF = formula.map(i => {
+                    // 如果在基料视图下，后添加原料不参与归一化（保持不变？或者也跟着变？）
+                    // 研发习惯：通常希望整个配方缩放。
+                    // 但如果只是调基料... 
+                    // 策略：只归一化当前视图可见的原料，其他保持不变（如果想全动就切到成品视图）
+                    if (yogurtMode && baseView && i.isPost) return i; 
+                    return {...i, weight: parseFloat((i.weight*ratio).toFixed(2))};
+                });
+                setFormula(newF);
             };
 
             const balanceWater = () => {
                 vibrate();
                 const waterIdx = formula.findIndex(i => i.name.includes('水') || i.id === 'wat');
                 if (waterIdx === -1) return alert("请先添加'工艺水'");
-                const otherWeight = formula.reduce((acc, i, idx) => idx !== waterIdx ? acc + (parseFloat(i.weight)||0) : acc, 0);
+                
+                // 计算当前视图下的其他原料重
+                const activeItems = (yogurtMode && baseView) ? formula.filter(i => !i.isPost) : formula;
+                const otherWeight = activeItems.reduce((acc, i) => (i.uuid !== formula[waterIdx].uuid) ? acc + (parseFloat(i.weight)||0) : acc, 0);
+                
                 const waterNeeded = batchSize - otherWeight;
-                if (waterNeeded < 0) return alert(`超重 ${Math.abs(waterNeeded).toFixed(1)}g，无需补水`);
+                if (waterNeeded < 0) return alert(`超重 ${Math.abs(waterNeeded).toFixed(1)}g`);
+                
                 const newF = [...formula];
+                // 确保水也是当前视图的一部分
+                if (yogurtMode && baseView && newF[waterIdx].isPost) {
+                    return alert("工艺水被标记为'后添加'，无法在基料模式下补水");
+                }
                 newF[waterIdx].weight = parseFloat(waterNeeded.toFixed(2));
                 setFormula(newF);
             };
 
             const copyReport = () => {
                 vibrate();
-                const date = new Date().toLocaleDateString();
-                const txt = `📋 乳品配方 (${date})\n----------------\n` +
-                    formula.map(i => `${i.name}: ${i.weight}g`).join('\n') +
-                    `\n----------------\n总重: ${res.w.toFixed(1)}g\nF${res.fat.toFixed(2)}% P${res.pro.toFixed(2)}% TS${res.ts.toFixed(2)}%`;
-                navigator.clipboard.writeText(txt).then(() => alert("配方已复制"));
+                const modeStr = yogurtMode ? (baseView ? "[基料模式]" : "[成品模式]") : "";
+                const txt = `📋 配方 ${modeStr}\n----------------\n` +
+                    formula.map(i => `${i.name}${i.isPost?'(后)':''}: ${i.weight}g`).join('\n') +
+                    `\n----------------\n总重: ${res.w.toFixed(1)}g\n指标: F${(res.fat||0).toFixed(2)}% P${(res.pro||0).toFixed(2)}% TS${(res.ts||0).toFixed(2)}% ${yogurtMode?`SE:${(res.sweetness*100).toFixed(1)}`:''}`;
+                navigator.clipboard.writeText(txt).then(() => alert("已复制"));
             };
 
+            // Solver (Simplified for brevity)
             const autoSolve = () => {
+                // ... (Keep existing logic, adjust for active items only)
                 vibrate();
-                let bestF = JSON.parse(JSON.stringify(formula));
-                const unlocked = bestF.filter(i => !i.locked);
-                if(!unlocked.length) return alert("请解锁至少一种原料");
-                const fixedW = bestF.reduce((a,b)=>b.locked?a+(parseFloat(b.weight)||0):a, 0);
+                // 仅平衡当前视图可见且未锁定的
+                const activeItems = (yogurtMode && baseView) ? formula.filter(i => !i.isPost) : formula;
+                const unlocked = activeItems.filter(i => !i.locked);
+                
+                if(!unlocked.length) return alert("请解锁原料");
+                const fixedW = activeItems.reduce((a,b)=>b.locked?a+(parseFloat(b.weight)||0):a, 0);
                 const targetW = batchSize - fixedW;
                 if(targetW < 0) return alert("锁定超重");
 
                 setIsSolving(true);
                 setTimeout(() => {
+                    // Monte Carlo logic (simplified copy)
                     let minErr = Infinity;
                     let bestWeights = unlocked.map(i => i.weight);
-                    for(let k=0; k<3000; k++) {
-                        let currentWs = new Array(unlocked.length).fill(0);
-                        let sumR = unlocked.map(() => Math.random()).reduce((a,b)=>a+b, 0);
-                        currentWs = unlocked.map((_, i) => (Math.random()/sumR)*targetW); // Simplified rand
-                        
+                    for(let k=0; k<2000; k++) {
+                        let rands = unlocked.map(() => Math.random());
+                        let sumR = rands.reduce((a,b)=>a+b, 0);
+                        let ws = rands.map(r => (r/sumR)*targetW);
                         let cF=0, cP=0, cW=0;
-                        bestF.forEach((item, idx) => {
+                        activeItems.forEach((item) => {
                             let w = item.locked ? item.weight : 0;
-                            if(!item.locked) {
-                                const uIdx = unlocked.findIndex(u => u.uuid === item.uuid);
-                                w = currentWs[uIdx];
-                            }
-                            cF += w * (item.fat||0); cP += w * (item.protein||0); cW += w;
+                            if(!item.locked) w = ws[unlocked.findIndex(u=>u.uuid===item.uuid)];
+                            cF+=w*(item.fat||0); cP+=w*(item.protein||0); cW+=w;
                         });
-                        const err = Math.abs((cF/cW) - targets.fat)*2 + Math.abs((cP/cW) - targets.pro);
-                        if(err < minErr) { minErr = err; bestWeights = currentWs; }
+                        const err = Math.abs((cF/cW)-targets.fat)*3 + Math.abs((cP/cW)-targets.pro)*2;
+                        if(err<minErr) { minErr=err; bestWeights=ws; }
                     }
-                    const newF = bestF.map(i => {
-                        if(i.locked) return i;
+                    
+                    const newF = formula.map(i => {
+                        if (yogurtMode && baseView && i.isPost) return i; // Ignore hidden
+                        if (i.locked) return i;
                         const uIdx = unlocked.findIndex(u => u.uuid === i.uuid);
-                        return {...i, weight: parseFloat(bestWeights[uIdx].toFixed(2))};
+                        return uIdx !== -1 ? {...i, weight: parseFloat(bestWeights[uIdx].toFixed(2))} : i;
                     });
                     setFormula(newF);
                     setIsSolving(false);
                     setUiState({...uiState, showTargets:false});
                 }, 500);
             };
-
-            const diffColor = (v, t) => {
-                if(!t) return 'text-gray-800';
-                const d = Math.abs(v - t);
-                return d <= 0.05 ? 'text-green-600' : (d <= 0.2 ? 'text-orange-500' : 'text-red-600');
+            
+            // Helper: Calc Culture Weight
+            const calcCultureWeight = () => {
+                // (BatchSize / 1000 / 1000) * dcuPerTon / pouchSize * pouchWeight
+                // 简化： Batch(g) -> Ton: Batch/1e6. 
+                const batchInTon = batchSize / 1000000;
+                const totalDCU = batchInTon * cultureCalc.dcuPerTon;
+                const grams = (totalDCU / cultureCalc.pouchSize) * cultureCalc.pouchWeight;
+                return grams;
             };
+
+            const diffColor = (v, t) => { if(!t) return 'text-gray-800'; const d=Math.abs(v-t); return d<=0.05?'text-green-600':(d<=0.2?'text-orange-500':'text-red-600'); };
 
             return (
                 <div className="min-h-screen pb-24">
                     {/* Header */}
                     <header className="fixed top-0 left-0 right-0 z-50 header-glass pt-safe">
                         <div className="flex justify-between items-center px-4 h-12">
-                            <div className="text-sm font-extrabold text-gray-600 tracking-wider flex items-center gap-2 tap-active" onClick={() => setUiState({...uiState, showRecipes:true})}>
-                                <Icon d={ICONS.Folder} size={18} className="text-blue-600"/> DAIRY LAB
+                            <div className="flex items-center gap-2">
+                                <div className="text-sm font-extrabold text-gray-600 tracking-wider flex items-center gap-1 tap-active" onClick={() => setUiState({...uiState, showRecipes:true})}>
+                                    <Icon d={ICONS.Folder} size={18} className="text-blue-600"/> DAIRY LAB
+                                </div>
+                                {yogurtMode && (
+                                    <div className="flex bg-gray-100 rounded-lg p-0.5 ml-2">
+                                        <button onClick={()=>setBaseView(true)} className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all ${baseView?'bg-white shadow text-blue-600':'text-gray-400'}`}>基料</button>
+                                        <button onClick={()=>setBaseView(false)} className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all ${!baseView?'bg-white shadow text-blue-600':'text-gray-400'}`}>成品</button>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex gap-4">
+                            <div className="flex gap-3">
+                                <button onClick={() => setUiState({...uiState, showTools:true})} className="text-gray-500 tap-active"><Icon d={ICONS.Tool} size={20}/></button>
                                 <button onClick={() => setUiState({...uiState, showTargets:true})} className="text-blue-600 flex items-center gap-1 text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-full tap-active"><Icon d={ICONS.Target} size={14}/> 目标</button>
                                 <button onClick={copyReport} className="text-gray-500 tap-active"><Icon d={ICONS.Share} size={20}/></button>
                             </div>
@@ -317,10 +393,10 @@
                             <button onClick={normalize} className="px-4 h-10 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-sm tap-active">归一化</button>
                         </div>
 
-                        <div className="grid grid-cols-4 border-t border-gray-100 h-16 bg-white">
+                        <div className={`grid ${yogurtMode ? 'grid-cols-5' : 'grid-cols-4'} border-t border-gray-100 h-16 bg-white`}>
                             {[
                                 {l:'FAT', v:res.fat, t:targets.fat}, {l:'PRO', v:res.pro, t:targets.pro}, {l:'TS', v:res.ts, t:targets.ts}, {l:'PF', v:res.pf, t:0}
-                            ].map((d,i) => (
+                            ].concat(yogurtMode ? [{l:'SE', v:res.sweetness*100, t:0}] : []).map((d,i) => (
                                 <div key={i} className="stat-capsule">
                                     <div className="text-[10px] font-extrabold text-gray-400 scale-90 mb-0.5">{d.l}</div>
                                     <div className={`font-mono font-extrabold text-lg leading-none ${diffColor(d.v, d.t)}`}>{(d.v || 0).toFixed(2)}</div>
@@ -331,62 +407,73 @@
                     </header>
 
                     {/* List */}
-                    <div className="pt-[145px] px-3"> 
+                    <div className="pt-[240px] px-3"> 
                         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 mb-4">
                             <div className="flex text-[10px] text-gray-500 font-bold bg-gray-50 py-2 px-3 uppercase tracking-wide">
                                 <div className="w-24">原料</div>
                                 <div className="flex-1 text-center">添加量 (g)</div>
-                                <div className="w-16 text-right">{uiState.mode === 'cost' ? '单价' : '占比%'}</div>
+                                <div className="w-16 text-right">{uiState.mode === 'cost' ? '单价' : (yogurtMode ? '甜度' : '占比%')}</div>
                             </div>
 
-                            {formula.map((item, idx) => (
-                                <div key={item.uuid} className={`list-row tap-active ${item.locked ? 'locked-bg' : ''}`} onClick={() => setUiState({...uiState, editId: uiState.editId===item.uuid ? null : item.uuid})}>
-                                    <div className="w-24 flex flex-col justify-center pr-1">
-                                        <div className={`font-bold text-sm truncate flex items-center gap-1 ${item.locked ? 'text-gray-400' : 'text-gray-800'}`}>
-                                            {item.name}
-                                            {item.locked && <Icon d={ICONS.Lock} size={10} className="text-amber-500"/>}
+                            {formula.map((item, idx) => {
+                                // 视图过滤：如果在基料视图，隐藏后添加原料
+                                if (yogurtMode && baseView && item.isPost) return null;
+
+                                return (
+                                    <div key={item.uuid} className={`list-row tap-active ${item.locked ? 'locked-bg' : ''} ${item.isPost ? 'post-add-bg' : ''}`} onClick={() => setUiState({...uiState, editId: uiState.editId===item.uuid ? null : item.uuid})}>
+                                        <div className="w-24 flex flex-col justify-center pr-1">
+                                            <div className={`font-bold text-sm truncate flex items-center gap-1 ${item.locked ? 'text-gray-400' : 'text-gray-800'}`}>
+                                                {item.name}
+                                                {item.locked && <Icon d={ICONS.Lock} size={10} className="text-amber-500"/>}
+                                                {item.isPost && <span className="text-[8px] bg-purple-100 text-purple-600 px-1 rounded">后</span>}
+                                            </div>
+                                            <div className="text-[9px] text-gray-400 font-mono mt-0.5 font-medium">F{item.fat} P{item.protein}</div>
                                         </div>
-                                        <div className="text-[9px] text-gray-400 font-mono mt-0.5 font-medium">F{item.fat} P{item.protein}</div>
-                                    </div>
 
-                                    <div className="flex-1 px-1">
-                                        <StepperInput 
-                                            value={item.weight} 
-                                            disabled={item.locked} 
-                                            onChange={(e) => !item.locked && updateItem(item.uuid, 'weight', e.target.value)} 
-                                        />
-                                    </div>
-
-                                    <div className="w-16 flex flex-col items-end justify-center gap-1 relative pl-1">
-                                        <div className="font-bold text-xs text-gray-700 font-mono">
-                                            {uiState.mode === 'cost' ? `¥${item.price}` : `${res.w > 0 ? (item.weight/res.w*100).toFixed(1) : 0}%`}
+                                        <div className="flex-1 px-1">
+                                            <StepperInput 
+                                                value={item.weight} 
+                                                disabled={item.locked} 
+                                                onChange={(e) => !item.locked && updateItem(item.uuid, 'weight', e.target.value)} 
+                                            />
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); delItem(item.uuid); }} className="text-gray-300 hover:text-red-500 p-1"><Icon d={ICONS.X} size={14}/></button>
-                                        {uiState.mode === 'cost' && <div className="cost-bar" style={{width: `${(item.weight*item.price) / (res.cost||1) * 100}%`}}></div>}
-                                    </div>
 
-                                    {/* Edit Panel */}
-                                    {uiState.editId === item.uuid && (
-                                        <div className="absolute left-0 right-0 top-full bg-white shadow-lg border-t border-gray-100 z-20 p-3 flex flex-col gap-3 animate-slide-up rounded-b-xl" onClick={e=>e.stopPropagation()}>
-                                            <div className="flex justify-between items-center">
-                                                <button onClick={() => updateItem(item.uuid, 'locked', !item.locked)} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${item.locked ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
-                                                    <Icon d={item.locked ? ICONS.Unlock : ICONS.Lock} size={14}/>
-                                                    {item.locked ? '解锁' : '锁定'}
-                                                </button>
-                                                <div className="flex items-center bg-gray-50 rounded-lg px-2 h-8">
-                                                    <span className="text-[10px] text-gray-400 font-bold mr-1">单价 ¥</span>
-                                                    <input type="number" value={item.price} onChange={e=>updateItem(item.uuid,'price',e.target.value)} className="w-12 bg-transparent text-xs font-bold outline-none"/>
+                                        <div className="w-16 flex flex-col items-end justify-center gap-1 relative pl-1">
+                                            <div className="font-bold text-xs text-gray-700 font-mono">
+                                                {uiState.mode === 'cost' ? `¥${item.price}` : (yogurtMode ? (item.sweet||0) : `${res.w > 0 ? (item.weight/res.w*100).toFixed(1) : 0}%`)}
+                                            </div>
+                                            <button onClick={(e) => { e.stopPropagation(); delItem(item.uuid); }} className="text-gray-300 hover:text-red-500 p-1"><Icon d={ICONS.X} size={14}/></button>
+                                            {uiState.mode === 'cost' && <div className="cost-bar" style={{width: `${(item.weight*item.price) / (res.cost||1) * 100}%`}}></div>}
+                                        </div>
+
+                                        {/* Edit Panel */}
+                                        {uiState.editId === item.uuid && (
+                                            <div className="absolute left-0 right-0 top-full bg-white shadow-lg border-t border-gray-100 z-20 p-3 flex flex-col gap-3 animate-slide-up rounded-b-xl" onClick={e=>e.stopPropagation()}>
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => updateItem(item.uuid, 'locked', !item.locked)} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${item.locked ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                            <Icon d={item.locked ? ICONS.Unlock : ICONS.Lock} size={14}/>
+                                                            {item.locked ? '解锁' : '锁定'}
+                                                        </button>
+                                                        {yogurtMode && (
+                                                            <button onClick={() => updateItem(item.uuid, 'isPost', !item.isPost)} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${item.isPost ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                                {item.isPost ? '后添加' : '基料'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center bg-gray-50 rounded-lg px-2 h-8"><span className="text-[10px] text-gray-400 font-bold mr-1">¥</span><input type="number" value={item.price} onChange={e=>updateItem(item.uuid,'price',e.target.value)} className="w-12 bg-transparent text-xs font-bold outline-none"/></div>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">FAT</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.fat} onChange={e=>updateItem(item.uuid,'fat',e.target.value)}/></div>
+                                                    <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">PRO</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.protein} onChange={e=>updateItem(item.uuid,'protein',e.target.value)}/></div>
+                                                    <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">TS</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.ts} onChange={e=>updateItem(item.uuid,'ts',e.target.value)}/></div>
+                                                    {yogurtMode && <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">SE</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.sweet} onChange={e=>updateItem(item.uuid,'sweet',e.target.value)}/></div>}
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">FAT</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.fat} onChange={e=>updateItem(item.uuid,'fat',e.target.value)}/></div>
-                                                <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">PRO</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.protein} onChange={e=>updateItem(item.uuid,'protein',e.target.value)}/></div>
-                                                <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">TS</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.ts} onChange={e=>updateItem(item.uuid,'ts',e.target.value)}/></div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         <div className="mt-2 text-center text-xs text-gray-400 font-mono">总成本: <span className="font-bold text-gray-700">¥{(res.costPerKg || 0).toFixed(2)}/kg</span></div>
@@ -399,7 +486,60 @@
                         <button onClick={() => setUiState({...uiState, mode:'cost'})} className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all ${uiState.mode==='cost' ? 'bg-green-600 text-white shadow-md' : 'text-gray-500'}`}>成本</button>
                     </div>
 
-                    {/* Modals */}
+                    {/* Tools Modal (Yogurt Features) */}
+                    {uiState.showTools && (
+                        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end" onClick={() => setUiState({...uiState, showTools:false})}>
+                            <div className="bg-white w-full rounded-t-[32px] p-6 h-[70vh] flex flex-col animate-slide-up" onClick={e=>e.stopPropagation()}>
+                                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                                <h3 className="text-2xl font-extrabold text-gray-900 mb-6">研发工具箱</h3>
+                                
+                                {/* Toggle Yogurt Mode */}
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl mb-6">
+                                    <div>
+                                        <div className="font-bold text-gray-900 flex items-center gap-2"><Icon d={ICONS.Flask} size={18}/> 酸奶模式</div>
+                                        <div className="text-xs text-gray-400 mt-1">启用甜度、基料拆分和菌种计算</div>
+                                    </div>
+                                    <div className={`toggle-switch ${yogurtMode?'active':''}`} onClick={() => setYogurtMode(!yogurtMode)}></div>
+                                </div>
+
+                                {yogurtMode && (
+                                    <div className="space-y-4 overflow-y-auto flex-1">
+                                        {/* Acidity Converter */}
+                                        <div className="p-4 border border-gray-100 rounded-2xl">
+                                            <h4 className="font-bold text-sm text-gray-700 mb-3">酸度换算</h4>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex-1 bg-gray-50 rounded-lg p-2">
+                                                    <div className="text-[10px] text-gray-400 uppercase">吉尔涅尔度 °T</div>
+                                                    <input type="number" value={acidity.t} onChange={e=>setAcidity({t:parseFloat(e.target.value)})} className="w-full bg-transparent font-bold text-lg outline-none"/>
+                                                </div>
+                                                <div className="text-gray-300">≈</div>
+                                                <div className="flex-1 bg-blue-50 rounded-lg p-2">
+                                                    <div className="text-[10px] text-blue-400 uppercase">乳酸 %</div>
+                                                    <div className="font-bold text-lg text-blue-700">{(acidity.t * 0.009).toFixed(3)}%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Culture Calculator */}
+                                        <div className="p-4 border border-gray-100 rounded-2xl">
+                                            <h4 className="font-bold text-sm text-gray-700 mb-3">菌种称量计算</h4>
+                                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                                <div className="bg-gray-50 p-2 rounded"><div className="text-[9px] text-gray-400">添加量 U/T</div><input type="number" value={cultureCalc.dcuPerTon} onChange={e=>setCultureCalc({...cultureCalc, dcuPerTon:parseFloat(e.target.value)})} className="w-full bg-transparent font-bold"/></div>
+                                                <div className="bg-gray-50 p-2 rounded"><div className="text-[9px] text-gray-400">规格 U/袋</div><input type="number" value={cultureCalc.pouchSize} onChange={e=>setCultureCalc({...cultureCalc, pouchSize:parseFloat(e.target.value)})} className="w-full bg-transparent font-bold"/></div>
+                                                <div className="bg-gray-50 p-2 rounded"><div className="text-[9px] text-gray-400">净重 g/袋</div><input type="number" value={cultureCalc.pouchWeight} onChange={e=>setCultureCalc({...cultureCalc, pouchWeight:parseFloat(e.target.value)})} className="w-full bg-transparent font-bold"/></div>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-purple-50 p-3 rounded-xl">
+                                                <div className="text-xs text-purple-600">当前 {batchSize}g 奶需称取:</div>
+                                                <div className="font-bold text-xl text-purple-700">{calcCultureWeight().toFixed(4)} g</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Other Modals (Target/Add/Recipes) kept same as previous */}
                     {uiState.showAdd && (
                         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end" onClick={() => setUiState({...uiState, showAdd:false})}>
                             <div className="bg-white w-full rounded-t-2xl p-4 h-[60vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
@@ -408,7 +548,7 @@
                                     {library.map(ing => (
                                         <div key={ing.id} onClick={() => addLibItem(ing)} className="p-3 bg-gray-50 rounded-xl tap-active border border-transparent active:border-blue-200">
                                             <div className="font-bold text-gray-800">{ing.name}</div>
-                                            <div className="text-[10px] text-gray-400 mt-1 font-mono">F{ing.fat} P{ing.protein} TS{ing.ts}</div>
+                                            <div className="text-[10px] text-gray-400 mt-1 font-mono">F{ing.fat} P{ing.protein} {yogurtMode?`SE${ing.sweet||0}`:''}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -429,35 +569,17 @@
                                     ))}
                                     <button onClick={autoSolve} disabled={isSolving} className="bg-blue-600 text-white rounded-lg font-bold text-xs flex flex-col items-center justify-center shadow-lg shadow-blue-200 tap-active p-2 h-full">
                                         <Icon d={ICONS.Wand} size={24}/>
-                                        <span className="mt-1">{isSolving?'计算中':'智能平衡'}</span>
+                                        <span className="mt-1">{isSolving?'...':'平衡当前'}</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     )}
-                    
-                    {/* Recipes Modal */}
                     {uiState.showRecipes && (
                         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setUiState({...uiState, showRecipes:false})}>
                             <div className="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl h-[60vh] flex flex-col" onClick={e=>e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-lg text-gray-900">配方存档</h3>
-                                    <button onClick={() => {
-                                        const name = prompt("输入配方名称");
-                                        if(name) setSavedRecipes([...savedRecipes, {id:Date.now(), name, formula, targets, batchSize, date:new Date().toLocaleDateString()}]);
-                                    }} className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1.5 rounded-lg">+ 保存当前</button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto space-y-2">
-                                    {savedRecipes.length===0 && <div className="text-center text-gray-400 mt-10 text-sm">暂无存档</div>}
-                                    {savedRecipes.map(r => (
-                                        <div key={r.id} className="bg-gray-50 p-3 rounded-xl flex justify-between items-center border border-gray-100" onClick={() => {
-                                            if(confirm(`加载 ${r.name}?`)) { setFormula(r.formula); setTargets(r.targets); setTargetBatchSize(r.targetBatchSize); setUiState({...uiState, showRecipes:false}); }
-                                        }}>
-                                            <div><div className="font-bold text-gray-800">{r.name}</div><div className="text-[10px] text-gray-400">{r.date}</div></div>
-                                            <button onClick={(e)=>{e.stopPropagation(); setSavedRecipes(savedRecipes.filter(x=>x.id!==r.id))}} className="text-gray-300 hover:text-red-500 p-2"><Icon d={ICONS.Trash} size={16}/></button>
-                                        </div>
-                                    ))}
-                                </div>
+                                <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-lg text-gray-900">配方存档</h3><button onClick={() => { const name = prompt("输入配方名称"); if(name) setSavedRecipes([...savedRecipes, {id:Date.now(), name, formula, targets, batchSize, date:new Date().toLocaleDateString()}]); }} className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1.5 rounded-lg">+ 保存当前</button></div>
+                                <div className="flex-1 overflow-y-auto space-y-2">{savedRecipes.length===0 && <div className="text-center text-gray-400 mt-10 text-sm">暂无存档</div>}{savedRecipes.map(r => (<div key={r.id} className="bg-gray-50 p-3 rounded-xl flex justify-between items-center border border-gray-100" onClick={() => { if(confirm(`加载 ${r.name}?`)) { setFormula(r.formula); setTargets(r.targets); setTargetBatchSize(r.targetBatchSize); setUiState({...uiState, showRecipes:false}); } }}><div><div className="font-bold text-gray-800">{r.name}</div><div className="text-[10px] text-gray-400">{r.date}</div></div><button onClick={(e)=>{e.stopPropagation(); setSavedRecipes(savedRecipes.filter(x=>x.id!==r.id))}} className="text-gray-300 hover:text-red-500 p-2"><Icon d={ICONS.Trash} size={16}/></button></div>))}</div>
                             </div>
                         </div>
                     )}

@@ -34,34 +34,7 @@
     <div id="root" class="h-full flex flex-col"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, Component } = React;
-
-        // --- 错误边界组件 (新增) ---
-        class ErrorBoundary extends Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
-            static getDerivedStateFromError(error) {
-                return { hasError: true, error };
-            }
-            componentDidCatch(error, errorInfo) {
-                console.error("App Error:", error, errorInfo);
-            }
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="flex flex-col items-center justify-center h-screen p-6 text-center">
-                            <div className="text-4xl mb-4">⚠️</div>
-                            <h2 className="text-lg font-bold text-slate-800 mb-2">应用遇到了一点问题</h2>
-                            <p className="text-sm text-slate-500 mb-4">请尝试刷新页面重试</p>
-                            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">刷新页面</button>
-                        </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
+        const { useState, useEffect, useMemo } = React;
 
         // --- 图标组件 (Lucide Icons) ---
         const Icons = {
@@ -86,7 +59,7 @@
             Thermometer: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M9 4v11"/></svg>
         };
 
-        // --- 核心数据结构 ---
+        // --- 核心数据结构更新：增加碳水、钠、能量系数 ---
         const INITIAL_INGREDIENTS = [
           { id: 'rm', name: '生牛乳', protein: 3.2, fat: 3.8, ts: 12.0, cost: 4.5, carbs: 4.6, sodium: 50 },
           { id: 'skim', name: '脱脂奶', protein: 3.4, fat: 0.1, ts: 8.8, cost: 3.5, carbs: 4.8, sodium: 52 },
@@ -96,8 +69,8 @@
           { id: 'smp', name: '脱脂乳粉 (SMP)', protein: 34.0, fat: 1.0, ts: 96.0, cost: 25.0, carbs: 54.0, sodium: 350 },
           { id: 'wpc80', name: '浓缩乳清蛋白 (WPC80)', protein: 80.0, fat: 6.0, ts: 95.0, cost: 70.0, carbs: 5.0, sodium: 180 },
           { id: 'sugar', name: '白砂糖', protein: 0, fat: 0, ts: 99.8, cost: 6.5, carbs: 99.8, sodium: 0 },
-          { id: 'stab', name: '复配稳定剂', protein: 0, fat: 0, ts: 95.0, cost: 45.0, carbs: 80.0, sodium: 500 },
-          { id: 'pectin', name: '果胶 (Pectin)', protein: 0, fat: 0, ts: 90.0, cost: 120.0, carbs: 10, sodium: 0, isColloid: true, maxLimit: 0.5 },
+          { id: 'stab', name: '复配稳定剂', protein: 0, fat: 0, ts: 95.0, cost: 45.0, carbs: 80.0, sodium: 500 }, // 假设值
+          { id: 'pectin', name: '果胶 (Pectin)', protein: 0, fat: 0, ts: 90.0, cost: 120.0, carbs: 10, sodium: 0, isColloid: true, maxLimit: 0.5 }, // 限量演示
           { id: 'starter', name: '发酵菌种', protein: 0, fat: 0, ts: 10.0, cost: 200.0, carbs: 0, sodium: 0 },
         ];
 
@@ -135,8 +108,9 @@
           );
         };
 
-        // --- 感官雷达图组件 ---
+        // --- 感官雷达图组件 (轻量级SVG实现) ---
         const RadarChart = ({ data }) => {
+            // data: { color: 8, texture: 7, flavor: 9, smell: 8, appearance: 7 }
             const size = 100;
             const center = 60;
             const radius = 40;
@@ -153,6 +127,7 @@
 
             return (
                 <svg viewBox="0 0 120 120" className="w-full h-40">
+                    {/* 背景网格 */}
                     {[0.2, 0.4, 0.6, 0.8, 1].map(scale => (
                          <polygon key={scale} points={keys.map((_, i) => {
                             const r = radius * scale;
@@ -160,6 +135,7 @@
                             return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
                          }).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
                     ))}
+                    {/* 数据区域 */}
                     <polygon points={points} fill="rgba(59, 130, 246, 0.2)" stroke="#2563eb" strokeWidth="2" />
                 </svg>
             );
@@ -171,6 +147,7 @@
           const [moduleType, setModuleType] = useState('milk'); 
           const [ingredients, setIngredients] = useState(INITIAL_INGREDIENTS);
           
+          // 研发参数
           const [targetMass, setTargetMass] = useState(1000);
           const [targetProtein, setTargetProtein] = useState(3.2);
           const [targetFat, setTargetFat] = useState(3.8);
@@ -178,9 +155,10 @@
           const [fatId, setFatId] = useState('cream');
           const [proId, setProId] = useState('smp');
           const [additives, setAdditives] = useState([]);
-          const [lossRate, setLossRate] = useState(1.5);
+          const [lossRate, setLossRate] = useState(1.5); // 生产损耗率 %
           const [result, setResult] = useState(null);
 
+          // 导航状态
           const getActiveTab = () => {
              if (['home', 'input', 'result'].includes(view)) return 'design';
              if (['recipe_list'].includes(view)) return 'recipe';
@@ -190,6 +168,7 @@
           };
           const activeTab = getActiveTab();
 
+          // 默认值设置
           useEffect(() => {
             if (moduleType === 'yogurt') {
                 setTargetProtein(3.0);
@@ -202,9 +181,12 @@
             }
           }, [moduleType]);
 
+          // --- 实时计算核心 ---
           useEffect(() => {
             let usedMass = 0, usedProtein = 0, usedFat = 0, usedCost = 0, usedTSMass = 0;
             let usedCarbs = 0, usedSodium = 0;
+
+            // 检查合规性预警
             let warnings = [];
 
             additives.forEach(add => {
@@ -217,8 +199,9 @@
                 usedTSMass += mass * (ing.ts / 100);
                 usedCost += mass * ing.cost;
                 usedCarbs += mass * (ing.carbs / 100);
-                usedSodium += mass * (ing.sodium / 100000 * 100);
+                usedSodium += mass * (ing.sodium / 100000 * 100); // mg/100g -> %
 
+                // GB 2760 校核 (简单版)
                 if (ing.isColloid && ing.maxLimit && add.amount > ing.maxLimit) {
                     warnings.push(`⚠️ ${ing.name} 用量 ${add.amount}% 超过建议上限 ${ing.maxLimit}%`);
                 }
@@ -259,6 +242,7 @@
             amounts[fatId] = (amounts[fatId] || 0) + mFat;
             amounts[proId] = (amounts[proId] || 0) + mPro;
             
+            // 累加平衡原料的营养素
             [
                 { mass: mBase, ing: base },
                 { mass: mFat, ing: fatSrc },
@@ -277,24 +261,31 @@
             const finalTS = (usedTSMass / targetMass) * 100;
             const finalMSNF = finalTS - targetFat;
             
+            // 品类判定 (Standard Classifier)
             let category = "未分类";
             if (targetProtein >= 2.9) category = "发酵乳/酸奶 (Fermented Milk)";
             else if (targetProtein >= 2.3) category = "风味发酵乳 (Flavored)";
             else if (targetProtein >= 0.7) category = "乳酸菌饮料 (Beverage)";
             else category = "非国标乳饮";
 
+            // 营养成分表计算 (每100g)
+            // 能量(kJ) = 17*Pro + 17*Carb + 37*Fat
             const nutrPer100g = {
                 protein: targetProtein,
                 fat: targetFat,
                 carbs: (usedCarbs / targetMass) * 100,
-                sodium: (usedSodium / targetMass) * 100 * 1000
+                sodium: (usedSodium / targetMass) * 100 * 1000 // % -> mg/100g
             };
             const energy = (17 * nutrPer100g.protein) + (17 * nutrPer100g.carbs) + (37 * nutrPer100g.fat);
             
             setResult({
               success: true, amounts, totalCost: finalCost,
-              warnings, category,
-              nutrition: { ...nutrPer100g, energy },
+              warnings,
+              category,
+              nutrition: {
+                  ...nutrPer100g,
+                  energy
+              },
               finalStats: { protein: targetProtein, fat: targetFat, ts: finalTS, msnf: finalMSNF }
             });
           }, [targetMass, targetProtein, targetFat, baseId, fatId, proId, additives, ingredients]);
@@ -319,14 +310,13 @@
                     { id: 'archive', label: '存档', icon: Icons.Archive, targetView: 'archive' }
                 ].map(item => {
                     const isActive = activeTab === item.id;
-                    const Icon = item.icon;
                     return (
                         <button 
                             key={item.id}
                             onClick={() => setView(item.targetView)}
                             className={`flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400 hover:text-slate-500'}`}
                         >
-                            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                            <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                             <span className="text-[10px] font-medium mt-1">{item.label}</span>
                         </button>
                     )
@@ -334,6 +324,9 @@
             </nav>
           );
 
+          // --- View Components ---
+
+          // 1. Home View
           if (view === 'home') {
               return (
                 <div className="flex flex-col h-full">
@@ -378,8 +371,10 @@
               );
           }
 
+          // 2. Input View
           if (view === 'input') {
               const themeClass = moduleType === 'milk' ? 'bg-blue-600 shadow-blue-200' : 'bg-purple-600 shadow-purple-200';
+              
               return (
                 <div className="flex flex-col h-full">
                     <div className={`bg-white px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm`}>
@@ -389,26 +384,27 @@
                         <h2 className="font-bold text-lg">{moduleType === 'milk' ? '调制乳研发' : '酸奶基料研发'}</h2>
                         <div className="w-8"></div> 
                     </div>
+
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 page-enter pb-40 no-scrollbar">
                         <SectionCard title="设定目标指标">
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 mb-1 block">投料总质量 (kg)</label>
-                                    <input type="number" autoComplete="off" value={targetMass} onChange={e => setTargetMass(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
+                                    <input type="number" value={targetMass} onChange={e => setTargetMass(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-xs font-bold text-slate-400 mb-1 block">目标蛋白 (%)</label>
-                                        <input type="number" autoComplete="off" step="0.1" value={targetProtein} onChange={e => setTargetProtein(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
+                                        <input type="number" step="0.1" value={targetProtein} onChange={e => setTargetProtein(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-slate-400 mb-1 block">目标脂肪 (%)</label>
-                                        <input type="number" autoComplete="off" step="0.1" value={targetFat} onChange={e => setTargetFat(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
+                                        <input type="number" step="0.1" value={targetFat} onChange={e => setTargetFat(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 mb-1 block">预估生产损耗率 (%)</label>
-                                    <input type="number" autoComplete="off" step="0.1" value={lossRate} onChange={e => setLossRate(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
+                                    <input type="number" step="0.1" value={lossRate} onChange={e => setLossRate(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
                                 </div>
                             </div>
                         </SectionCard>
@@ -446,7 +442,7 @@
                                             {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
                                         </select>
                                         <div className="relative w-20">
-                                            <input type="number" autoComplete="off" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-right outline-none focus:border-blue-500" value={add.amount} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, amount: parseFloat(e.target.value) || 0} : a))} />
+                                            <input type="number" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-right outline-none focus:border-blue-500" value={add.amount} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, amount: parseFloat(e.target.value) || 0} : a))} />
                                             <span className="absolute right-6 top-2 text-xs text-slate-400">%</span>
                                         </div>
                                         <button onClick={() => setAdditives(prev => prev.filter(a => a.id !== add.id))} className="p-2 text-slate-300 hover:text-red-500"><Icons.Trash size={18} /></button>
@@ -473,8 +469,10 @@
               );
           }
 
+          // 3. Result View
           if (view === 'result' && result) {
               const themeClass = moduleType === 'milk' ? 'bg-blue-600' : 'bg-purple-600';
+              
               return (
                 <div className="flex flex-col h-full bg-white page-enter">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
@@ -487,12 +485,14 @@
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 no-scrollbar pb-24">
+                        {/* 警告信息 */}
                         {result.warnings && result.warnings.length > 0 && (
                             <div className="mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                                 {result.warnings.map((w, i) => <div key={i} className="text-xs text-amber-600 font-bold flex gap-1"><span>⚠️</span>{w}</div>)}
                             </div>
                         )}
 
+                        {/* 核心数据卡片 */}
                         <div className={`${themeClass} rounded-3xl p-6 text-white shadow-xl mb-6`}>
                             <div className="flex justify-between items-start mb-2">
                                 <span className="text-white/80 text-xs font-bold uppercase tracking-wider">预估总成本 (含{lossRate}%损耗)</span>
@@ -515,6 +515,7 @@
                             </div>
                         </div>
 
+                        {/* 自动生成的营养成分表 */}
                         <div className="mb-6">
                              <h3 className="font-bold text-slate-800 mb-3 text-lg flex items-center gap-2"><Icons.Table size={18} className="text-blue-600"/> 营养成分表 (GB 28050)</h3>
                              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -558,6 +559,7 @@
                              </div>
                         </div>
 
+                        {/* 配方列表 */}
                         <h3 className="font-bold text-slate-800 mb-3 text-lg">生产配料单</h3>
                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
                             <table className="w-full text-sm text-left">
@@ -590,13 +592,13 @@
               );
           }
 
+          // 4. Tools List View (Expanded)
           if (view === 'tools_list') {
-              // 静态映射颜色类名，避免 Tailwind 动态解析失败
               const tools = [
-                  { id: 'db', name: '原料数据库', desc: '管理成分与成本', icon: Icons.Database, bgClass: 'bg-emerald-100', textClass: 'text-emerald-600' },
-                  { id: 'tool_sensory', name: '感官评测', desc: '生成雷达图', icon: Icons.Radar, bgClass: 'bg-pink-100', textClass: 'text-pink-600' },
-                  { id: 'tool_fvalue', name: '杀菌F值计算', desc: '工艺强度评估', icon: Icons.Thermometer, bgClass: 'bg-orange-100', textClass: 'text-orange-600' },
-                  { id: 'compliance', name: '合规自检', desc: 'GB2760查询', icon: Icons.ShieldCheck, bgClass: 'bg-indigo-100', textClass: 'text-indigo-600', action: () => alert("集成在配方计算结果页中") },
+                  { id: 'db', name: '原料数据库', desc: '管理成分与成本', icon: Icons.Database, color: 'emerald' },
+                  { id: 'tool_sensory', name: '感官评测', desc: '生成雷达图', icon: Icons.Radar, color: 'pink' },
+                  { id: 'tool_fvalue', name: '杀菌F值计算', desc: '工艺强度评估', icon: Icons.Thermometer, color: 'orange' },
+                  { id: 'compliance', name: '合规自检', desc: 'GB2760查询', icon: Icons.ShieldCheck, color: 'indigo', action: () => alert("集成在配方计算结果页中") },
               ];
 
               return (
@@ -607,7 +609,7 @@
                           <div className="grid grid-cols-2 gap-4">
                               {tools.map(t => (
                                   <div key={t.id} onClick={() => t.action ? t.action() : setView(t.id)} className="card-press bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center cursor-pointer">
-                                      <div className={`w-12 h-12 rounded-xl ${t.bgClass} flex items-center justify-center ${t.textClass} mb-3`}>
+                                      <div className={`w-12 h-12 rounded-xl bg-${t.color}-100 flex items-center justify-center text-${t.color}-600 mb-3`}>
                                           <t.icon size={24} />
                                       </div>
                                       <div className="font-bold text-slate-700">{t.name}</div>
@@ -621,6 +623,7 @@
               )
           }
 
+          // 5. Database View
           if (view === 'db') {
               return (
                 <div className="flex flex-col h-full bg-slate-50">
@@ -636,12 +639,12 @@
                                     <div className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">TS: {ing.ts}%</div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 mb-2">
-                                   <div><label className="text-[10px] text-slate-400">蛋白 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.protein} onChange={e => updateIng(ing.id, 'protein', parseFloat(e.target.value))} /></div>
-                                   <div><label className="text-[10px] text-slate-400">脂肪 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.fat} onChange={e => updateIng(ing.id, 'fat', parseFloat(e.target.value))} /></div>
+                                   <div><label className="text-[10px] text-slate-400">蛋白 %</label><input type="number" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.protein} onChange={e => updateIng(ing.id, 'protein', parseFloat(e.target.value))} /></div>
+                                   <div><label className="text-[10px] text-slate-400">脂肪 %</label><input type="number" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.fat} onChange={e => updateIng(ing.id, 'fat', parseFloat(e.target.value))} /></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                   <div><label className="text-[10px] text-slate-400">碳水 g/100g</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.carbs} onChange={e => updateIng(ing.id, 'carbs', parseFloat(e.target.value))} /></div>
-                                   <div><label className="text-[10px] text-slate-400">钠 mg/100g</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.sodium} onChange={e => updateIng(ing.id, 'sodium', parseFloat(e.target.value))} /></div>
+                                   <div><label className="text-[10px] text-slate-400">碳水 g/100g</label><input type="number" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.carbs} onChange={e => updateIng(ing.id, 'carbs', parseFloat(e.target.value))} /></div>
+                                   <div><label className="text-[10px] text-slate-400">钠 mg/100g</label><input type="number" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.sodium} onChange={e => updateIng(ing.id, 'sodium', parseFloat(e.target.value))} /></div>
                                 </div>
                              </div>
                         ))}
@@ -651,6 +654,7 @@
               );
           }
 
+          // 6. Sensory Tool View
           if (view === 'tool_sensory') {
               const [scores, setScores] = useState({ color: 8, texture: 8, flavor: 8, smell: 8, appearance: 8 });
               return (
@@ -679,10 +683,11 @@
               )
           }
 
+          // 7. F-Value Tool View
           if (view === 'tool_fvalue') {
               const [temp, setTemp] = useState(137);
               const [time, setTime] = useState(4);
-              const f0 = Math.pow(10, (temp - 121.1) / 10) * (time / 60);
+              const f0 = Math.pow(10, (temp - 121.1) / 10) * (time / 60); // UHT F0
               return (
                   <div className="flex flex-col h-full bg-slate-50">
                       <div className="bg-white px-4 py-3 flex items-center border-b border-slate-200">
@@ -698,11 +703,11 @@
                           <div className="bg-white p-6 rounded-2xl shadow-sm space-y-4">
                                <div>
                                   <label className="text-sm font-bold text-slate-500">杀菌温度 (°C)</label>
-                                  <input type="number" autoComplete="off" value={temp} onChange={e => setTemp(parseFloat(e.target.value))} className="w-full p-3 border rounded-xl mt-1 text-xl font-bold"/>
+                                  <input type="number" value={temp} onChange={e => setTemp(parseFloat(e.target.value))} className="w-full p-3 border rounded-xl mt-1 text-xl font-bold"/>
                                </div>
                                <div>
                                   <label className="text-sm font-bold text-slate-500">保持时间 (s)</label>
-                                  <input type="number" autoComplete="off" value={time} onChange={e => setTime(parseFloat(e.target.value))} className="w-full p-3 border rounded-xl mt-1 text-xl font-bold"/>
+                                  <input type="number" value={time} onChange={e => setTime(parseFloat(e.target.value))} className="w-full p-3 border rounded-xl mt-1 text-xl font-bold"/>
                                </div>
                           </div>
                       </div>
@@ -711,6 +716,7 @@
               )
           }
           
+          // 8. Archive & Recipe List (Placeholders)
           if (view === 'archive' || view === 'recipe_list') {
              return (
                 <div className="flex flex-col h-full justify-center items-center text-slate-400">
@@ -726,12 +732,7 @@
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        // Wrap in ErrorBoundary
-        root.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>
-        );
+        root.render(<App />);
     </script>
 </body>
 </html>

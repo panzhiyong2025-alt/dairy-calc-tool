@@ -25,13 +25,13 @@
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
             --primary: #0052D9;
-            --bg: #F5F7FA;
+            --bg: #F0F2F5; /* 背景稍微加深，突显卡片 */
         }
         body {
             background-color: var(--bg);
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, sans-serif;
             -webkit-tap-highlight-color: transparent;
-            color: #333;
+            color: #1F2937;
             overscroll-behavior-y: none;
             user-select: none;
         }
@@ -40,10 +40,10 @@
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
         .header-glass {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: saturate(180%) blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
         
         .pt-safe { padding-top: calc(var(--safe-top) + 4px); }
@@ -55,8 +55,9 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-right: 1px solid #eee;
+            border-right: 1px solid #E5E7EB;
             position: relative;
+            padding: 8px 0;
         }
         .stat-capsule:last-child { border-right: none; }
         
@@ -64,25 +65,32 @@
             display: flex;
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f0f0f0;
-            padding: 10px 12px; 
+            border-bottom: 1px solid #F3F4F6;
+            padding: 12px 14px; 
             position: relative;
+            transition: background-color 0.2s;
+        }
+        /* 锁定状态样式 */
+        .list-row.locked-bg {
+            background-color: #F9FAFB;
         }
         
-        /* 步进器样式 */
+        /* 步进器样式优化 */
         .stepper-btn {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #F3F4F6;
-            color: #6B7280;
-            border-radius: 8px;
+            color: #4B5563;
+            border-radius: 10px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 20px;
+            transition: all 0.1s;
         }
-        .stepper-btn:active { background: #E5E7EB; color: #374151; }
+        .stepper-btn:active:not(:disabled) { background: #E5E7EB; color: #111827; }
+        .stepper-btn:disabled { opacity: 0.3; cursor: not-allowed; background: #F3F4F6; color: #9CA3AF; }
         
         .input-focus:focus-within { background: #fff; box-shadow: 0 0 0 2px var(--primary); z-index: 10; }
         
@@ -93,7 +101,7 @@
             left: 0;
             height: 3px;
             background: #10B981;
-            opacity: 0.3;
+            opacity: 0.4;
         }
     </style>
 </head>
@@ -129,7 +137,8 @@
             Wand: "M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M12 5l-2-2M12 13l-2 2M2 2l20 20",
             Drop: "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z",
             Trash: "M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2",
-            Folder: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+            Folder: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z",
+            Refresh: "M23 4v6h-6M1 20v-6h6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"
         };
 
         const DEFAULT_INGREDIENTS = [
@@ -142,25 +151,25 @@
             { id: 'wat', name: '工艺水', fat: 0.0, protein: 0.0, ts: 0.0, price: 0.005 },
         ];
 
-        // 微调输入组件
+        // 优化后的微调输入组件 (按钮不消失，变灰)
         const StepperInput = ({ value, onChange, disabled, className }) => {
             const handleStep = (delta) => {
                 if (disabled) return;
                 vibrate();
                 const safeVal = parseFloat(value) || 0;
-                onChange({ target: { value: Math.max(0, safeVal + delta).toFixed(1) } }); // 保留1位小数
+                onChange({ target: { value: Math.max(0, safeVal + delta).toFixed(1) } });
             };
             return (
-                <div className={`flex items-center gap-1 h-10 rounded-lg ${className} ${disabled ? '' : 'bg-blue-50/50 input-focus'}`}>
-                    <button onClick={(e) => {e.stopPropagation(); handleStep(-1)}} className={`stepper-btn ${disabled?'opacity-0':'opacity-100'}`}>-</button>
+                <div className={`flex items-center gap-2 h-11 rounded-lg ${className} ${disabled ? '' : 'bg-blue-50/50 input-focus'}`}>
+                    <button onClick={(e) => {e.stopPropagation(); handleStep(-1)}} disabled={disabled} className="stepper-btn">-</button>
                     <input 
                         type="number" 
                         value={value} 
                         disabled={disabled}
                         onChange={onChange}
-                        className={`flex-1 text-center font-mono text-lg font-bold bg-transparent outline-none ${disabled ? 'text-gray-400' : 'text-blue-700'}`}
+                        className={`flex-1 text-center font-mono text-xl font-bold bg-transparent outline-none ${disabled ? 'text-gray-400' : 'text-blue-700'}`}
                     />
-                    <button onClick={(e) => {e.stopPropagation(); handleStep(1)}} className={`stepper-btn ${disabled?'opacity-0':'opacity-100'}`}>+</button>
+                    <button onClick={(e) => {e.stopPropagation(); handleStep(1)}} disabled={disabled} className="stepper-btn">+</button>
                 </div>
             );
         };
@@ -186,7 +195,7 @@
                 localStorage.setItem('v5_recipes', JSON.stringify(savedRecipes));
             }, [library, formula, targets, batchSize, isLocked, savedRecipes]);
 
-            // Core Calculation (Defensive)
+            // Core Calculation
             const res = useMemo(() => {
                 let W=0, F=0, P=0, T=0, C=0;
                 formula.forEach(i => {
@@ -200,12 +209,10 @@
                     pro: P/safeW,
                     ts: T/safeW,
                     pf: F>0 ? P/F : 0,
-                    cost: C,
                     costPerKg: C/safeW
                 };
             }, [formula]);
 
-            // Actions
             const updateItem = (uuid, k, v) => setFormula(formula.map(i => i.uuid===uuid ? {...i, [k]: v} : i));
             const delItem = (uuid) => { vibrate(); setFormula(formula.filter(i => i.uuid!==uuid)); };
             const addLibItem = (item) => { vibrate(); setFormula([...formula, {...item, uuid: Date.now().toString(), weight:0, locked:false}]); setUiState({...uiState, showAdd:false}); };
@@ -217,42 +224,32 @@
                 setFormula(formula.map(i => ({...i, weight: parseFloat((i.weight*ratio).toFixed(2))})));
             };
 
-            // 智能补水 (Smart Water)
             const balanceWater = () => {
                 vibrate();
-                // 查找工艺水
                 const waterIdx = formula.findIndex(i => i.name.includes('水') || i.id === 'wat');
-                if (waterIdx === -1) return alert("配方中没有找到'工艺水'，请先添加");
-                
-                // 计算除水以外的重量
+                if (waterIdx === -1) return alert("请先添加'工艺水'");
                 const otherWeight = formula.reduce((acc, i, idx) => idx !== waterIdx ? acc + (parseFloat(i.weight)||0) : acc, 0);
                 const waterNeeded = batchSize - otherWeight;
-                
-                if (waterNeeded < 0) return alert(`总重已超过目标值 ${Math.abs(waterNeeded).toFixed(1)}g，无需补水`);
-                
+                if (waterNeeded < 0) return alert(`超重 ${Math.abs(waterNeeded).toFixed(1)}g，无需补水`);
                 const newF = [...formula];
                 newF[waterIdx].weight = parseFloat(waterNeeded.toFixed(2));
                 setFormula(newF);
             };
 
-            // 复制分享
             const copyReport = () => {
                 vibrate();
                 const date = new Date().toLocaleDateString();
-                const txt = `📋 乳品研发配方单 (${date})\n目标: F${targets.fat}% P${targets.pro}% TS${targets.ts}%\n----------------\n` +
-                    formula.map(i => `${i.name}: ${i.weight}g  |  ${res.w>0?(i.weight/res.w*100).toFixed(2):0}%`).join('\n') +
-                    `\n----------------\n总重: ${res.w.toFixed(1)}g\n成本: ¥${res.costPerKg.toFixed(2)}/kg\n理化: F${res.fat.toFixed(2)}% P${res.pro.toFixed(2)}% TS${res.ts.toFixed(2)}%`;
-                
-                navigator.clipboard.writeText(txt).then(() => alert("📋 报告已复制，可直接粘贴到微信"));
+                const txt = `📋 乳品配方 (${date})\n----------------\n` +
+                    formula.map(i => `${i.name}: ${i.weight}g`).join('\n') +
+                    `\n----------------\n总重: ${res.w.toFixed(1)}g\nF${res.fat.toFixed(2)}% P${res.pro.toFixed(2)}% TS${res.ts.toFixed(2)}%`;
+                navigator.clipboard.writeText(txt).then(() => alert("配方已复制"));
             };
 
-            // 自动平衡算法
             const autoSolve = () => {
                 vibrate();
                 let bestF = JSON.parse(JSON.stringify(formula));
                 const unlocked = bestF.filter(i => !i.locked);
                 if(!unlocked.length) return alert("请解锁至少一种原料");
-                
                 const fixedW = bestF.reduce((a,b)=>b.locked?a+(parseFloat(b.weight)||0):a, 0);
                 const targetW = batchSize - fixedW;
                 if(targetW < 0) return alert("锁定超重");
@@ -261,13 +258,10 @@
                 setTimeout(() => {
                     let minErr = Infinity;
                     let bestWeights = unlocked.map(i => i.weight);
-                    
                     for(let k=0; k<3000; k++) {
                         let currentWs = new Array(unlocked.length).fill(0);
-                        let sumR = 0;
-                        let rands = unlocked.map(() => Math.random());
-                        sumR = rands.reduce((a,b)=>a+b, 0);
-                        currentWs = rands.map(r => (r/sumR)*targetW);
+                        let sumR = unlocked.map(() => Math.random()).reduce((a,b)=>a+b, 0);
+                        currentWs = unlocked.map((_, i) => (Math.random()/sumR)*targetW); // Simplified rand
                         
                         let cF=0, cP=0, cW=0;
                         bestF.forEach((item, idx) => {
@@ -278,11 +272,9 @@
                             }
                             cF += w * (item.fat||0); cP += w * (item.protein||0); cW += w;
                         });
-                        
                         const err = Math.abs((cF/cW) - targets.fat)*2 + Math.abs((cP/cW) - targets.pro);
                         if(err < minErr) { minErr = err; bestWeights = currentWs; }
                     }
-                    
                     const newF = bestF.map(i => {
                         if(i.locked) return i;
                         const uIdx = unlocked.findIndex(u => u.uuid === i.uuid);
@@ -295,7 +287,7 @@
             };
 
             const diffColor = (v, t) => {
-                if(!t) return 'text-gray-900';
+                if(!t) return 'text-gray-800';
                 const d = Math.abs(v - t);
                 return d <= 0.05 ? 'text-green-600' : (d <= 0.2 ? 'text-orange-500' : 'text-red-600');
             };
@@ -304,57 +296,57 @@
                 <div className="min-h-screen pb-24">
                     {/* Header */}
                     <header className="fixed top-0 left-0 right-0 z-50 header-glass pt-safe">
-                        <div className="flex justify-between items-center px-4 h-10">
-                            <div className="text-sm font-bold text-gray-500 tracking-wider flex items-center gap-2" onClick={() => setUiState({...uiState, showRecipes:true})}>
-                                <Icon d={ICONS.Folder} size={16} className="text-blue-600"/> DAIRY LAB
+                        <div className="flex justify-between items-center px-4 h-12">
+                            <div className="text-sm font-extrabold text-gray-600 tracking-wider flex items-center gap-2 tap-active" onClick={() => setUiState({...uiState, showRecipes:true})}>
+                                <Icon d={ICONS.Folder} size={18} className="text-blue-600"/> DAIRY LAB
                             </div>
-                            <div className="flex gap-3">
-                                <button onClick={() => setUiState({...uiState, showTargets:true})} className="text-blue-600 flex items-center gap-1 text-xs font-bold bg-blue-50 px-2 py-1 rounded-full tap-active"><Icon d={ICONS.Target} size={14}/> 目标</button>
-                                <button onClick={copyReport} className="text-gray-500 tap-active"><Icon d={ICONS.Share} size={18}/></button>
+                            <div className="flex gap-4">
+                                <button onClick={() => setUiState({...uiState, showTargets:true})} className="text-blue-600 flex items-center gap-1 text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-full tap-active"><Icon d={ICONS.Target} size={14}/> 目标</button>
+                                <button onClick={copyReport} className="text-gray-500 tap-active"><Icon d={ICONS.Share} size={20}/></button>
                             </div>
                         </div>
 
-                        <div className="px-4 pb-2 flex items-center gap-2">
-                            <div className={`flex-1 flex items-center bg-gray-100 rounded-lg px-3 h-9 transition-colors ${isLocked ? 'opacity-60' : ''}`}>
-                                <span className="text-xs font-bold text-gray-400 mr-2">投料</span>
-                                <input type="number" value={batchSize} disabled={isLocked} onChange={e => setBatchSize(parseFloat(e.target.value))} className="bg-transparent flex-1 font-mono font-bold text-lg text-right outline-none text-gray-800"/>
+                        <div className="px-4 pb-3 flex items-center gap-2">
+                            <div className={`flex-1 flex items-center bg-gray-100 rounded-xl px-3 h-10 transition-colors ${isLocked ? 'opacity-60' : ''}`}>
+                                <span className="text-xs font-bold text-gray-500 mr-2">投料</span>
+                                <input type="number" value={batchSize} disabled={isLocked} onChange={e => setBatchSize(parseFloat(e.target.value))} className="bg-transparent flex-1 font-mono font-bold text-xl text-right outline-none text-gray-800"/>
                                 <span className="text-xs font-bold text-gray-400 ml-1">g</span>
                             </div>
-                            <button onClick={() => { vibrate(); setIsLocked(!isLocked); }} className={`w-9 h-9 flex items-center justify-center rounded-lg ${isLocked ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'} tap-active`}><Icon d={isLocked ? ICONS.Lock : ICONS.Unlock} size={16}/></button>
-                            <button onClick={balanceWater} className="w-9 h-9 flex items-center justify-center bg-blue-100 text-blue-600 rounded-lg tap-active"><Icon d={ICONS.Drop} size={18}/></button>
-                            <button onClick={normalize} className="px-3 h-9 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm tap-active">归一化</button>
+                            <button onClick={() => { vibrate(); setIsLocked(!isLocked); }} className={`w-10 h-10 flex items-center justify-center rounded-xl ${isLocked ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'} tap-active`}><Icon d={isLocked ? ICONS.Lock : ICONS.Unlock} size={18}/></button>
+                            <button onClick={balanceWater} className="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-xl tap-active"><Icon d={ICONS.Drop} size={20}/></button>
+                            <button onClick={normalize} className="px-4 h-10 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-sm tap-active">归一化</button>
                         </div>
 
-                        <div className="grid grid-cols-4 border-t border-gray-100 h-14 bg-white">
+                        <div className="grid grid-cols-4 border-t border-gray-100 h-16 bg-white">
                             {[
-                                {l:'FAT', v:res.fat, t:targets.fat},
-                                {l:'PRO', v:res.pro, t:targets.pro}, // Fixed prop name
-                                {l:'TS', v:res.ts, t:targets.ts},
-                                {l:'PF', v:res.pf, t:0}
+                                {l:'FAT', v:res.fat, t:targets.fat}, {l:'PRO', v:res.pro, t:targets.pro}, {l:'TS', v:res.ts, t:targets.ts}, {l:'PF', v:res.pf, t:0}
                             ].map((d,i) => (
                                 <div key={i} className="stat-capsule">
-                                    <div className="text-[10px] font-bold text-gray-400 scale-90">{d.l}</div>
-                                    <div className={`font-mono font-bold text-base leading-none ${diffColor(d.v, d.t)}`}>{(d.v || 0).toFixed(2)}</div>
-                                    {d.t > 0 && Math.abs(d.v - d.t) > 0.05 && <div className="text-[8px] text-gray-400 scale-75 mt-0.5">{(d.v - d.t) > 0 ? '+' : ''}{(d.v - d.t || 0).toFixed(2)}</div>}
+                                    <div className="text-[10px] font-extrabold text-gray-400 scale-90 mb-0.5">{d.l}</div>
+                                    <div className={`font-mono font-extrabold text-lg leading-none ${diffColor(d.v, d.t)}`}>{(d.v || 0).toFixed(2)}</div>
+                                    {d.t > 0 && Math.abs(d.v - d.t) > 0.05 && <div className="text-[9px] text-gray-400 scale-90 mt-0.5 font-bold">{(d.v - d.t) > 0 ? '+' : ''}{(d.v - d.t || 0).toFixed(2)}</div>}
                                 </div>
                             ))}
                         </div>
                     </header>
 
                     {/* List */}
-                    <div className="pt-[130px] px-2"> 
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                            <div className="flex text-[10px] text-gray-400 font-bold bg-gray-50 py-1.5 px-3">
+                    <div className="pt-[145px] px-3"> 
+                        <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 mb-4">
+                            <div className="flex text-[10px] text-gray-500 font-bold bg-gray-50 py-2 px-3 uppercase tracking-wide">
                                 <div className="w-24">原料</div>
                                 <div className="flex-1 text-center">添加量 (g)</div>
                                 <div className="w-16 text-right">{uiState.mode === 'cost' ? '单价' : '占比%'}</div>
                             </div>
 
                             {formula.map((item, idx) => (
-                                <div key={item.uuid} className={`list-row tap-active ${item.locked ? 'bg-gray-50' : ''}`} onClick={() => setUiState({...uiState, editId: uiState.editId===item.uuid ? null : item.uuid})}>
-                                    <div className="w-24 flex flex-col justify-center">
-                                        <div className={`font-bold text-sm truncate ${item.locked ? 'text-gray-500' : 'text-gray-800'}`}>{item.name}</div>
-                                        <div className="text-[9px] text-gray-400 font-mono mt-0.5">F{item.fat} P{item.protein}</div>
+                                <div key={item.uuid} className={`list-row tap-active ${item.locked ? 'locked-bg' : ''}`} onClick={() => setUiState({...uiState, editId: uiState.editId===item.uuid ? null : item.uuid})}>
+                                    <div className="w-24 flex flex-col justify-center pr-1">
+                                        <div className={`font-bold text-sm truncate flex items-center gap-1 ${item.locked ? 'text-gray-400' : 'text-gray-800'}`}>
+                                            {item.name}
+                                            {item.locked && <Icon d={ICONS.Lock} size={10} className="text-amber-500"/>}
+                                        </div>
+                                        <div className="text-[9px] text-gray-400 font-mono mt-0.5 font-medium">F{item.fat} P{item.protein}</div>
                                     </div>
 
                                     <div className="flex-1 px-1">
@@ -365,25 +357,31 @@
                                         />
                                     </div>
 
-                                    <div className="w-16 flex flex-col items-end justify-center gap-1 relative">
-                                        <div className="font-bold text-xs text-gray-600">
+                                    <div className="w-16 flex flex-col items-end justify-center gap-1 relative pl-1">
+                                        <div className="font-bold text-xs text-gray-700 font-mono">
                                             {uiState.mode === 'cost' ? `¥${item.price}` : `${res.w > 0 ? (item.weight/res.w*100).toFixed(1) : 0}%`}
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); delItem(item.uuid); }} className="text-gray-300 hover:text-red-500 p-1 -mr-1"><Icon d={ICONS.X} size={14}/></button>
-                                        {/* 成本占比条 */}
+                                        <button onClick={(e) => { e.stopPropagation(); delItem(item.uuid); }} className="text-gray-300 hover:text-red-500 p-1"><Icon d={ICONS.X} size={14}/></button>
                                         {uiState.mode === 'cost' && <div className="cost-bar" style={{width: `${(item.weight*item.price) / (res.cost||1) * 100}%`}}></div>}
                                     </div>
 
+                                    {/* Edit Panel */}
                                     {uiState.editId === item.uuid && (
-                                        <div className="absolute left-0 right-0 mt-12 bg-white shadow-lg border-t border-gray-100 z-10 p-3 flex items-center justify-between" onClick={e=>e.stopPropagation()}>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => updateItem(item.uuid, 'locked', !item.locked)} className="px-3 py-1.5 bg-gray-100 rounded text-xs font-bold text-gray-600">{item.locked ? '解锁' : '锁定'}</button>
-                                                <div className="flex items-center bg-gray-50 rounded px-2"><span className="text-[10px] text-gray-400 mr-1">单价</span><input type="number" value={item.price} onChange={e=>updateItem(item.uuid,'price',e.target.value)} className="w-12 bg-transparent text-xs font-bold outline-none"/></div>
+                                        <div className="absolute left-0 right-0 top-full bg-white shadow-lg border-t border-gray-100 z-20 p-3 flex flex-col gap-3 animate-slide-up rounded-b-xl" onClick={e=>e.stopPropagation()}>
+                                            <div className="flex justify-between items-center">
+                                                <button onClick={() => updateItem(item.uuid, 'locked', !item.locked)} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${item.locked ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                    <Icon d={item.locked ? ICONS.Unlock : ICONS.Lock} size={14}/>
+                                                    {item.locked ? '解锁' : '锁定'}
+                                                </button>
+                                                <div className="flex items-center bg-gray-50 rounded-lg px-2 h-8">
+                                                    <span className="text-[10px] text-gray-400 font-bold mr-1">单价 ¥</span>
+                                                    <input type="number" value={item.price} onChange={e=>updateItem(item.uuid,'price',e.target.value)} className="w-12 bg-transparent text-xs font-bold outline-none"/>
+                                                </div>
                                             </div>
-                                            <div className="flex gap-1 text-[10px]">
-                                                <input className="w-8 bg-gray-50 text-center" placeholder="F" value={item.fat} onChange={e=>updateItem(item.uuid,'fat',e.target.value)}/>
-                                                <input className="w-8 bg-gray-50 text-center" placeholder="P" value={item.protein} onChange={e=>updateItem(item.uuid,'protein',e.target.value)}/>
-                                                <input className="w-8 bg-gray-50 text-center" placeholder="T" value={item.ts} onChange={e=>updateItem(item.uuid,'ts',e.target.value)}/>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">FAT</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.fat} onChange={e=>updateItem(item.uuid,'fat',e.target.value)}/></div>
+                                                <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">PRO</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.protein} onChange={e=>updateItem(item.uuid,'protein',e.target.value)}/></div>
+                                                <div className="bg-gray-50 p-1.5 rounded text-center"><div className="text-[9px] text-gray-400 font-bold">TS</div><input className="w-full bg-transparent text-center font-mono text-xs font-bold" value={item.ts} onChange={e=>updateItem(item.uuid,'ts',e.target.value)}/></div>
                                             </div>
                                         </div>
                                     )}
@@ -391,26 +389,26 @@
                             ))}
                         </div>
 
-                        <div className="mt-2 text-center text-xs text-gray-400 font-mono">总成本: <span className="font-bold text-gray-600">¥{(res.costPerKg || 0).toFixed(2)}/kg</span></div>
-                        <button onClick={() => { vibrate(); setUiState({...uiState, showAdd:true}); }} className="mt-4 w-full py-3 rounded-xl border-2 border-dashed border-blue-200 text-blue-400 font-bold flex items-center justify-center gap-1 tap-active"><Icon d={ICONS.Plus} size={18}/> 添加原料</button>
+                        <div className="mt-2 text-center text-xs text-gray-400 font-mono">总成本: <span className="font-bold text-gray-700">¥{(res.costPerKg || 0).toFixed(2)}/kg</span></div>
+                        <button onClick={() => { vibrate(); setUiState({...uiState, showAdd:true}); }} className="mt-4 w-full py-3 rounded-xl border-2 border-dashed border-blue-200 text-blue-500 font-bold flex items-center justify-center gap-1 tap-active bg-white"><Icon d={ICONS.Plus} size={20}/> 添加原料</button>
                     </div>
 
                     {/* Bottom Switcher */}
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full p-1 flex gap-1 z-40">
-                        <button onClick={() => setUiState({...uiState, mode:'calc'})} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${uiState.mode==='calc' ? 'bg-gray-900 text-white shadow' : 'text-gray-500'}`}>配方</button>
-                        <button onClick={() => setUiState({...uiState, mode:'cost'})} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${uiState.mode==='cost' ? 'bg-green-600 text-white shadow' : 'text-gray-500'}`}>成本</button>
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur shadow-xl border border-gray-100 rounded-full p-1 flex gap-1 z-40">
+                        <button onClick={() => setUiState({...uiState, mode:'calc'})} className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all ${uiState.mode==='calc' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500'}`}>配方</button>
+                        <button onClick={() => setUiState({...uiState, mode:'cost'})} className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all ${uiState.mode==='cost' ? 'bg-green-600 text-white shadow-md' : 'text-gray-500'}`}>成本</button>
                     </div>
 
                     {/* Modals */}
                     {uiState.showAdd && (
-                        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-end" onClick={() => setUiState({...uiState, showAdd:false})}>
+                        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end" onClick={() => setUiState({...uiState, showAdd:false})}>
                             <div className="bg-white w-full rounded-t-2xl p-4 h-[60vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
                                 <div className="font-bold text-lg mb-4 text-center text-gray-800">原料库</div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3">
                                     {library.map(ing => (
-                                        <div key={ing.id} onClick={() => addLibItem(ing)} className="p-3 bg-gray-50 rounded-xl tap-active">
+                                        <div key={ing.id} onClick={() => addLibItem(ing)} className="p-3 bg-gray-50 rounded-xl tap-active border border-transparent active:border-blue-200">
                                             <div className="font-bold text-gray-800">{ing.name}</div>
-                                            <div className="text-[10px] text-gray-400 mt-1">F{ing.fat} P{ing.protein}</div>
+                                            <div className="text-[10px] text-gray-400 mt-1 font-mono">F{ing.fat} P{ing.protein} TS{ing.ts}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -419,44 +417,44 @@
                     )}
 
                     {uiState.showTargets && (
-                        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setUiState({...uiState, showTargets:false})}>
-                            <div className="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl" onClick={e=>e.stopPropagation()}>
-                                <div className="font-bold text-lg mb-4 text-center">目标设定</div>
-                                <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setUiState({...uiState, showTargets:false})}>
+                            <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={e=>e.stopPropagation()}>
+                                <div className="font-bold text-lg mb-5 text-center text-gray-900">目标设定</div>
+                                <div className="grid grid-cols-2 gap-4 mb-6">
                                     {['fat', 'pro', 'ts'].map(k => (
-                                        <div key={k} className="bg-gray-50 rounded-lg p-2">
-                                            <div className="text-[10px] text-gray-400 font-bold uppercase">{k}%</div>
-                                            <input type="number" value={targets[k]} onChange={e => setTargets({...targets, [k]:parseFloat(e.target.value)})} className="w-full bg-transparent font-bold text-lg outline-none text-center"/>
+                                        <div key={k} className="bg-gray-50 rounded-lg p-2 border border-gray-100">
+                                            <div className="text-[10px] text-gray-400 font-bold uppercase text-center">{k}%</div>
+                                            <input type="number" value={targets[k]} onChange={e => setTargets({...targets, [k]:parseFloat(e.target.value)})} className="w-full bg-transparent font-bold text-xl outline-none text-center text-gray-800"/>
                                         </div>
                                     ))}
                                     <button onClick={autoSolve} disabled={isSolving} className="bg-blue-600 text-white rounded-lg font-bold text-xs flex flex-col items-center justify-center shadow-lg shadow-blue-200 tap-active p-2 h-full">
-                                        <Icon d={ICONS.Wand} size={20}/>
-                                        <span>{isSolving?'...':'平衡'}</span>
+                                        <Icon d={ICONS.Wand} size={24}/>
+                                        <span className="mt-1">{isSolving?'计算中':'智能平衡'}</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     )}
                     
-                    {/* 简易配方存档弹窗 */}
+                    {/* Recipes Modal */}
                     {uiState.showRecipes && (
-                        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setUiState({...uiState, showRecipes:false})}>
+                        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setUiState({...uiState, showRecipes:false})}>
                             <div className="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl h-[60vh] flex flex-col" onClick={e=>e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-lg">我的配方</h3>
+                                    <h3 className="font-bold text-lg text-gray-900">配方存档</h3>
                                     <button onClick={() => {
                                         const name = prompt("输入配方名称");
                                         if(name) setSavedRecipes([...savedRecipes, {id:Date.now(), name, formula, targets, batchSize, date:new Date().toLocaleDateString()}]);
-                                    }} className="text-blue-600 font-bold text-sm">+ 保存当前</button>
+                                    }} className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1.5 rounded-lg">+ 保存当前</button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-2">
-                                    {savedRecipes.length===0 && <div className="text-center text-gray-400 mt-10">暂无存档</div>}
+                                    {savedRecipes.length===0 && <div className="text-center text-gray-400 mt-10 text-sm">暂无存档</div>}
                                     {savedRecipes.map(r => (
-                                        <div key={r.id} className="bg-gray-50 p-3 rounded-xl flex justify-between items-center" onClick={() => {
+                                        <div key={r.id} className="bg-gray-50 p-3 rounded-xl flex justify-between items-center border border-gray-100" onClick={() => {
                                             if(confirm(`加载 ${r.name}?`)) { setFormula(r.formula); setTargets(r.targets); setTargetBatchSize(r.targetBatchSize); setUiState({...uiState, showRecipes:false}); }
                                         }}>
-                                            <div><div className="font-bold">{r.name}</div><div className="text-[10px] text-gray-400">{r.date}</div></div>
-                                            <button onClick={(e)=>{e.stopPropagation(); setSavedRecipes(savedRecipes.filter(x=>x.id!==r.id))}} className="text-gray-300"><Icon d={ICONS.Trash} size={16}/></button>
+                                            <div><div className="font-bold text-gray-800">{r.name}</div><div className="text-[10px] text-gray-400">{r.date}</div></div>
+                                            <button onClick={(e)=>{e.stopPropagation(); setSavedRecipes(savedRecipes.filter(x=>x.id!==r.id))}} className="text-gray-300 hover:text-red-500 p-2"><Icon d={ICONS.Trash} size={16}/></button>
                                         </div>
                                     ))}
                                 </div>

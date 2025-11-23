@@ -23,7 +23,6 @@
         .card-press:active { transform: scale(0.98); transition: transform 0.1s; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* 营养成分表样式 */
         .nutrition-table { border: 2px solid #000; width: 100%; font-family: sans-serif; }
         .nutrition-table th, .nutrition-table td { border-bottom: 1px solid #000; padding: 4px 8px; }
         .nutrition-table .thick-border { border-bottom: 4px solid #000; }
@@ -36,86 +35,42 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, Component } = React;
 
-        // --- 错误边界组件 (新增) ---
+        // --- 错误边界 ---
         class ErrorBoundary extends Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
-            static getDerivedStateFromError(error) {
-                return { hasError: true, error };
-            }
-            componentDidCatch(error, errorInfo) {
-                console.error("App Error:", error, errorInfo);
-            }
+            constructor(props) { super(props); this.state = { hasError: false, errorInfo: null }; }
+            static getDerivedStateFromError(error) { return { hasError: true }; }
+            componentDidCatch(error, errorInfo) { console.error("App Error:", error, errorInfo); this.setState({errorInfo}); }
             render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="flex flex-col items-center justify-center h-screen p-6 text-center">
-                            <div className="text-4xl mb-4">⚠️</div>
-                            <h2 className="text-lg font-bold text-slate-800 mb-2">应用遇到了一点问题</h2>
-                            <p className="text-sm text-slate-500 mb-4">请尝试刷新页面重试</p>
-                            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">刷新页面</button>
-                        </div>
-                    );
-                }
+                if (this.state.hasError) return <div className="p-8 text-center mt-20"><h2 className="font-bold text-xl text-red-600">应用遇到问题</h2><p className="text-slate-500 mt-2 text-sm">请尝试刷新页面</p><button onClick={() => window.location.reload()} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full shadow-lg">刷新重试</button></div>;
                 return this.props.children;
             }
         }
 
-        // --- 图标组件 (Lucide Icons) ---
+        // --- 图标组件 ---
         const Icons = {
+            Beaker: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></svg>,
+            ClipboardCheck: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>,
+            Utensils: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
             Milk: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219C7.674 7.965 7 9.027 7 10v2.665c0 3.055 2.239 5.596 5.167 5.966A1.998 1.998 0 0 0 14 17.333V21"/><path d="M10 21h4"/><path d="M9 4h6"/></svg>,
-            Yogurt: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 21a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5C14.3 7.1 13 6.4 13 3h-2c0 3.4-1.3 4.1-3 5.5C6 10.1 5 12 5 14a7 7 0 0 0 7 7z"/><path d="M12 12v4"/><path d="M12 16h4"/></svg>,
+            Leaf: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 13-11 13a6 6 0 0 1-2.7-.57"/><path d="M11 14a5 5 0 0 1-3-4"/></svg>,
+            Star: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            ThermometerSun: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 9a4 4 0 0 0-2 7.5"/><path d="M12 3v2"/><path d="m6.6 18.4-1.4 1.4"/><path d="M20 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M4 13H2"/><path d="M6.34 7.34 4.93 5.93"/></svg>,
             ChevronLeft: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m15 18-6-6 6-6"/></svg>,
             ChevronRight: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m9 18 6-6-6-6"/></svg>,
             ChevronDown: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m6 9 6 6 6-6"/></svg>,
             Plus: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
             Trash: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
             Database: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
-            FileText: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>,
-            Calculator: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+            Flask: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>,
             Wrench: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
             Layout: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>,
-            Archive: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>,
-            Flask: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>,
-            User: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Layers: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 19-8.5-4.5"/><path d="m12 19 8.5-4.5"/><path d="m12 19v-9"/><path d="m2.5 14.5 9.5 5 9.5-5"/><path d="m2.5 10.5 9.5 5 9.5-5"/></svg>,
+            Clipboard: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>,
+            MessageSquare: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
             Table: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>,
-            Radar: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 2 7 4.5v11L12 22l-7-4.5v-11L12 2z"/><path d="M12 2v20"/><path d="M12 8.5 16.5 11 12 13.5 7.5 11 12 8.5z"/></svg>,
-            ShieldCheck: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>,
-            Thermometer: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M9 4v11"/></svg>
-        };
-
-        // --- 核心数据结构 ---
-        const INITIAL_INGREDIENTS = [
-          { id: 'rm', name: '生牛乳', protein: 3.2, fat: 3.8, ts: 12.0, cost: 4.5, carbs: 4.6, sodium: 50 },
-          { id: 'skim', name: '脱脂奶', protein: 3.4, fat: 0.1, ts: 8.8, cost: 3.5, carbs: 4.8, sodium: 52 },
-          { id: 'water', name: 'RO水', protein: 0, fat: 0, ts: 0, cost: 0.05, carbs: 0, sodium: 0 },
-          { id: 'cream', name: '稀奶油 (38%)', protein: 2.0, fat: 38.0, ts: 42.0, cost: 35.0, carbs: 2.8, sodium: 30 },
-          { id: 'butter', name: '无水奶油 (AMF)', protein: 0, fat: 99.8, ts: 99.9, cost: 60.0, carbs: 0, sodium: 0 },
-          { id: 'smp', name: '脱脂乳粉 (SMP)', protein: 34.0, fat: 1.0, ts: 96.0, cost: 25.0, carbs: 54.0, sodium: 350 },
-          { id: 'wpc80', name: '浓缩乳清蛋白 (WPC80)', protein: 80.0, fat: 6.0, ts: 95.0, cost: 70.0, carbs: 5.0, sodium: 180 },
-          { id: 'sugar', name: '白砂糖', protein: 0, fat: 0, ts: 99.8, cost: 6.5, carbs: 99.8, sodium: 0 },
-          { id: 'stab', name: '复配稳定剂', protein: 0, fat: 0, ts: 95.0, cost: 45.0, carbs: 80.0, sodium: 500 },
-          { id: 'pectin', name: '果胶 (Pectin)', protein: 0, fat: 0, ts: 90.0, cost: 120.0, carbs: 10, sodium: 0, isColloid: true, maxLimit: 0.5 },
-          { id: 'starter', name: '发酵菌种', protein: 0, fat: 0, ts: 10.0, cost: 200.0, carbs: 0, sodium: 0 },
-        ];
-
-        // CN NRV 标准
-        const NRV = { energy: 8400, protein: 60, fat: 60, carbs: 300, sodium: 2000 };
-
-        // --- 核心算法 ---
-        const solve3x3 = (m, b) => {
-          const det = (m) => 
-            m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
-            m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
-            m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-          const D = det(m);
-          if (Math.abs(D) < 1e-9) return null;
-          const mx = m.map((row, i) => [b[i], row[1], row[2]]);
-          const my = m.map((row, i) => [row[0], b[i], row[2]]);
-          const mz = m.map((row, i) => [row[0], row[1], b[i]]);
-          return [det(mx) / D, det(my) / D, det(mz) / D];
+            Calculator: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+            Check: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="20 6 9 17 4 12"/></svg>,
+            User: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         };
 
         // --- 组件: 卡片容器 ---
@@ -135,42 +90,74 @@
           );
         };
 
-        // --- 感官雷达图组件 ---
-        const RadarChart = ({ data }) => {
-            const size = 100;
-            const center = 60;
-            const radius = 40;
-            const keys = Object.keys(data);
-            const count = keys.length;
-            const angleStep = (Math.PI * 2) / count;
+        // --- 数据 (更新了SMP的钠含量和乳蛋白典型值) ---
+        const INITIAL_INGREDIENTS = [
+          { id: 'rm', name: '生牛乳', protein: 3.3, fat: 3.8, ts: 12.5, cost: 4.5, carbs: 4.6, sodium: 50 },
+          { id: 'skim', name: '脱脂乳', protein: 3.4, fat: 0.1, ts: 8.8, cost: 3.5, carbs: 4.8, sodium: 52 },
+          { id: 'water', name: 'RO水', protein: 0, fat: 0, ts: 0, cost: 0.05, carbs: 0, sodium: 0 },
+          { id: 'cream', name: '稀奶油 (38%)', protein: 2.0, fat: 38.0, ts: 42.0, cost: 35.0, carbs: 2.8, sodium: 30 },
+          { id: 'butter', name: '无水奶油 (AMF)', protein: 0, fat: 99.8, ts: 99.9, cost: 60.0, carbs: 0, sodium: 0 },
+          { id: 'smp', name: '脱脂乳粉 (SMP)', protein: 34.0, fat: 1.0, ts: 96.0, cost: 25.0, carbs: 54.0, sodium: 535 }, // 修正为 535
+          { id: 'wpc80', name: '浓缩乳清蛋白 (WPC80)', protein: 80.0, fat: 6.0, ts: 95.0, cost: 70.0, carbs: 5.0, sodium: 180 },
+          { id: 'sugar', name: '白砂糖', protein: 0, fat: 0, ts: 99.8, cost: 6.5, carbs: 99.8, sodium: 0 },
+          { id: 'flavor', name: '香精/色素', protein: 0, fat: 0, ts: 5.0, cost: 80.0, carbs: 0.5, sodium: 0 }, 
+          { id: 'jam', name: '果酱/果粒', protein: 0.5, fat: 0.1, ts: 50.0, cost: 15.0, carbs: 48.0, sodium: 10 }, 
+          { id: 'stab', name: '复配稳定剂', protein: 0, fat: 0, ts: 95.0, cost: 45.0, carbs: 80.0, sodium: 500 },
+          { id: 'pectin', name: '果胶 (Pectin)', protein: 0, fat: 0, ts: 90.0, cost: 120.0, carbs: 10, sodium: 0, isColloid: true, maxLimit: 0.5 },
+          { id: 'starter', name: '发酵菌种', protein: 0, fat: 0, ts: 10.0, cost: 200.0, carbs: 0, sodium: 0 },
+        ];
 
-            const points = keys.map((key, i) => {
-                const val = data[key]; // 0-10
-                const r = (val / 10) * radius;
-                const angle = i * angleStep - Math.PI / 2;
-                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
-            }).join(' ');
+        // 更新后的光明产品指标
+        const GUANGMING_PRODUCTS = [
+          { name: '3.4 优倍', P: 3.4, F: 3.8, immune: 210, lacto: 50, perox: 1500, alpha: 1200, beta: 3000 },
+          { name: '浓醇 4.0 优倍', P: 4.0, F: 4.0, immune: 220, lacto: 60, perox: 1500, alpha: 1500, beta: 3200 },
+          { name: '超鲜 5.0 优倍', P: 5.0, F: 5.0, immune: 300, lacto: 80, perox: 3200, alpha: 1800, beta: 4000 },
+        ];
 
-            return (
-                <svg viewBox="0 0 120 120" className="w-full h-40">
-                    {[0.2, 0.4, 0.6, 0.8, 1].map(scale => (
-                         <polygon key={scale} points={keys.map((_, i) => {
-                            const r = radius * scale;
-                            const angle = i * angleStep - Math.PI / 2;
-                            return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
-                         }).join(' ')} fill="none" stroke="#e2e8f0" strokeWidth="1" />
-                    ))}
-                    <polygon points={points} fill="rgba(59, 130, 246, 0.2)" stroke="#2563eb" strokeWidth="2" />
-                </svg>
-            );
-        }
+        const HERBS = [
+            { name: "枸杞", benefit: "明目，增强免疫", type: "药食同源", usage: "浸提液或原浆，建议添加量 1-3%" },
+            { name: "红枣", benefit: "补气养血，安神", type: "药食同源", usage: "浓缩汁或红枣浆，建议添加量 2-5%" },
+            { name: "燕麦", benefit: "膳食纤维，饱腹感", type: "谷物", usage: "酶解燕麦粉或燕麦粒，建议添加量 3-8%" },
+            { name: "茯苓", benefit: "健脾和胃，宁心", type: "药食同源", usage: "超微粉或提取物，建议添加量 0.5-1%" },
+        ];
 
-        // --- 主应用 ---
+        const RECOMMEND_RECIPES = [
+            { name: "3.6g 黄金奶", type: 'milk', p: 3.6, f: 4.0, desc: "黄金奶源标准" },
+            { name: "高蛋白酸奶", type: 'yogurt', p: 3.5, f: 3.8, desc: "浓郁口感，适合高端市场" },
+            { name: "清爽乳酸菌饮", type: 'yogurt', p: 1.0, f: 0, desc: "0脂清爽，饭后解腻" }
+        ];
+        
+        const NRV = { energy: 8400, protein: 60, fat: 60, carbs: 300, sodium: 2000 };
+
+        // --- 核心算法 ---
+        const solve3x3 = (m, b) => {
+          const det = (m) => m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+          const D = det(m);
+          if (Math.abs(D) < 1e-9) return null;
+          const mx = m.map((row, i) => [b[i], row[1], row[2]]);
+          const my = m.map((row, i) => [row[0], b[i], row[2]]);
+          const mz = m.map((row, i) => [row[0], row[1], b[i]]);
+          return [det(mx) / D, det(my) / D, det(mz) / D];
+        };
+
+        const copyToClipboard = (text) => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.focus(); textarea.select();
+            try { document.execCommand('copy'); alert('配方已复制！'); } catch (err) { alert('复制失败'); }
+            document.body.removeChild(textarea);
+        };
+
         function App() {
+          // --- State ---
           const [view, setView] = useState('home'); 
           const [moduleType, setModuleType] = useState('milk'); 
           const [ingredients, setIngredients] = useState(INITIAL_INGREDIENTS);
+          const [savedRecipes, setSavedRecipes] = useState([]); 
           
+          // Standardizer
           const [targetMass, setTargetMass] = useState(1000);
           const [targetProtein, setTargetProtein] = useState(3.2);
           const [targetFat, setTargetFat] = useState(3.8);
@@ -181,26 +168,42 @@
           const [lossRate, setLossRate] = useState(1.5);
           const [result, setResult] = useState(null);
 
+          // Tools
+          const [productName, setProductName] = useState(''); 
+          const [recipesToCompare, setRecipesToCompare] = useState([]); 
+          const [verifierInputs, setVerifierInputs] = useState([{ id: Date.now(), ingId: 'rm', amount: 100, protein: 3.3, fat: 3.8 }]);
+          const [verifierLoss, setVerifierLoss] = useState(1.5);
+
+          // F-Value Tool State
+          const [fValueParams, setFValueParams] = useState({ temp: 137, time: 4, z: 10, refTemp: 121.1, mode: 'UHT' });
+          const [guangmingProduct, setGuangmingProduct] = useState(GUANGMING_PRODUCTS[0]);
+
+          // Navigation
           const getActiveTab = () => {
              if (['home', 'input', 'result'].includes(view)) return 'design';
-             if (['recipe_list'].includes(view)) return 'recipe';
-             if (['tools_list', 'db', 'tool_sensory', 'tool_fvalue'].includes(view)) return 'tools';
-             if (['archive'].includes(view)) return 'archive';
-             return 'design';
+             if (['recipe_list', 'recipe_compare', 'recipe_detail'].includes(view)) return 'recipe'; 
+             if (['tools_list', 'db', 'tool_herb', 'tool_fvalue', 'tool_recommend', 'verifier_input', 'tool_guangming'].includes(view)) return 'tools';
+             return 'design'; 
           };
           const activeTab = getActiveTab();
 
-          useEffect(() => {
-            if (moduleType === 'yogurt') {
-                setTargetProtein(3.0);
-                setTargetFat(3.5);
-                setProId('wpc80'); 
-            } else {
-                setTargetProtein(3.2);
-                setTargetFat(3.8);
-                setProId('smp');   
-            }
-          }, [moduleType]);
+          const handleTabClick = (targetTab, defaultView) => {
+              if (activeTab === targetTab) {
+                  if (targetTab === 'design') setView('home');
+                  if (targetTab === 'recipe') setView('recipe_list');
+                  if (targetTab === 'tools') setView('tools_list');
+              } else {
+                  setView(defaultView);
+              }
+          }
+
+          // Logic
+          const goInput = (type) => {
+              setModuleType(type);
+              if (type === 'yogurt') { setTargetProtein(3.0); setTargetFat(3.5); setProId('wpc80'); setProductName('高蛋白酸奶基料'); } 
+              else { setTargetProtein(3.3); setTargetFat(3.8); setProId('smp'); setProductName('巴氏奶标准化'); }
+              setView('input'); 
+          };
 
           useEffect(() => {
             let usedMass = 0, usedProtein = 0, usedFat = 0, usedCost = 0, usedTSMass = 0;
@@ -218,10 +221,7 @@
                 usedCost += mass * ing.cost;
                 usedCarbs += mass * (ing.carbs / 100);
                 usedSodium += mass * (ing.sodium / 100000 * 100);
-
-                if (ing.isColloid && ing.maxLimit && add.amount > ing.maxLimit) {
-                    warnings.push(`⚠️ ${ing.name} 用量 ${add.amount}% 超过建议上限 ${ing.maxLimit}%`);
-                }
+                if (ing.isColloid && ing.maxLimit && add.amount > ing.maxLimit) warnings.push(`⚠️ ${ing.name} 用量 ${add.amount}% 超过建议上限 ${ing.maxLimit}% (GB2760预警)`);
               }
             });
 
@@ -229,29 +229,19 @@
             const remTargetP = (targetMass * targetProtein / 100) - usedProtein;
             const remTargetF = (targetMass * targetFat / 100) - usedFat;
 
-            if (remainingMass <= 0) {
-              setResult({ success: false, error: "辅料添加量已超过总质量" });
-              return;
-            }
+            if (remainingMass <= 0) { setResult({ success: false, error: "辅料添加量已超过总质量" }); return; }
 
             const base = ingredients.find(i => i.id === baseId);
             const fatSrc = ingredients.find(i => i.id === fatId);
             const proSrc = ingredients.find(i => i.id === proId);
 
-            if (!base || !fatSrc || !proSrc) return;
+            if (!base || !fatSrc || !proSrc) { setResult(null); return; }
 
-            const matrix = [
-              [1, 1, 1],
-              [base.protein/100, fatSrc.protein/100, proSrc.protein/100],
-              [base.fat/100, fatSrc.fat/100, proSrc.fat/100]
-            ];
+            const matrix = [[1, 1, 1], [base.protein/100, fatSrc.protein/100, proSrc.protein/100], [base.fat/100, fatSrc.fat/100, proSrc.fat/100]];
             const vector = [remainingMass, remTargetP, remTargetF];
             const sol = solve3x3(matrix, vector);
 
-            if (!sol || sol.some(val => val < -0.001)) {
-              setResult({ success: false, error: "无解：原料组合无法满足目标，请调整蛋白/脂肪目标值。" });
-              return;
-            }
+            if (!sol || sol.some(val => val < -0.001)) { setResult({ success: false, error: "无解：原料组合无法满足目标。" }); return; }
 
             const [mBase, mFat, mPro] = sol;
             const amounts = {};
@@ -259,118 +249,113 @@
             amounts[fatId] = (amounts[fatId] || 0) + mFat;
             amounts[proId] = (amounts[proId] || 0) + mPro;
             
-            [
-                { mass: mBase, ing: base },
-                { mass: mFat, ing: fatSrc },
-                { mass: mPro, ing: proSrc }
-            ].forEach(item => {
-                const mass = item.mass;
-                const ing = item.ing;
+            [{mass: mBase, ing: base}, {mass: mFat, ing: fatSrc}, {mass: mPro, ing: proSrc}].forEach(item => {
+                const mass = item.mass; const ing = item.ing;
+                usedProtein += mass * (ing.protein / 100); 
+                usedFat += mass * (ing.fat / 100);         
                 usedTSMass += mass * (ing.ts / 100);
                 usedCost += mass * ing.cost;
                 usedCarbs += mass * (ing.carbs / 100);
                 usedSodium += mass * (ing.sodium / 100000 * 100);
             });
-
             additives.forEach(add => { amounts[add.ingredientId] = (amounts[add.ingredientId] || 0) + ((add.amount / 100) * targetMass); });
 
             const finalTS = (usedTSMass / targetMass) * 100;
             const finalMSNF = finalTS - targetFat;
-            
             let category = "未分类";
-            if (targetProtein >= 2.9) category = "发酵乳/酸奶 (Fermented Milk)";
-            else if (targetProtein >= 2.3) category = "风味发酵乳 (Flavored)";
-            else if (targetProtein >= 0.7) category = "乳酸菌饮料 (Beverage)";
+            if (targetProtein >= 2.9) category = "发酵乳/酸奶";
+            else if (targetProtein >= 2.3) category = "风味发酵乳";
+            else if (targetProtein >= 0.7) category = "乳酸菌饮料";
             else category = "非国标乳饮";
 
-            const nutrPer100g = {
-                protein: targetProtein,
-                fat: targetFat,
-                carbs: (usedCarbs / targetMass) * 100,
-                sodium: (usedSodium / targetMass) * 100 * 1000
-            };
+            const actualProteinPercent = (usedProtein / targetMass) * 100;
+            const actualFatPercent = (usedFat / targetMass) * 100;
+            const nutrPer100g = { protein: actualProteinPercent, fat: actualFatPercent, carbs: (usedCarbs / targetMass) * 100, sodium: (usedSodium / targetMass) * 100 * 1000 };
             const energy = (17 * nutrPer100g.protein) + (17 * nutrPer100g.carbs) + (37 * nutrPer100g.fat);
             
             setResult({
-              success: true, amounts, totalCost: usedCost, // FIX: Changed finalCost to usedCost
-              warnings, category,
-              nutrition: { ...nutrPer100g, energy },
+              success: true, amounts, totalCost: usedCost, warnings, category, nutrition: { ...nutrPer100g, energy },
+              actualStats: { protein: actualProteinPercent, fat: actualFatPercent, ts: finalTS },
               finalStats: { protein: targetProtein, fat: targetFat, ts: finalTS, msnf: finalMSNF }
             });
-          }, [targetMass, targetProtein, targetFat, baseId, fatId, proId, additives, ingredients]);
+          }, [targetMass, targetProtein, targetFat, baseId, fatId, proId, additives, ingredients, lossRate, moduleType]);
 
-          const goInput = (type) => { setModuleType(type); setView('input'); };
-          const goResult = () => {
-             if (result && result.success) {
-                 setView('result');
-                 window.scrollTo(0,0);
-             } else {
-                 alert("请先修正参数错误");
-             }
+          const goResult = () => { if (result && result.success) { setView('result'); window.scrollTo(0,0); } else { alert(result?.error || "参数错误"); } };
+          const saveRecipe = () => {
+            if (result && result.success) {
+                const newRecipe = { id: Date.now(), name: productName, date: new Date().toLocaleDateString('zh-CN'), cost: (result.totalCost * (1 + lossRate/100)), target: { p: targetProtein, f: targetFat, mass: targetMass }, amounts: result.amounts, category: result.category, module: moduleType, nutrition: result.nutrition, finalStats: result.finalStats, actualStats: result.actualStats, inputData: { baseId, fatId, proId, additives } };
+                setSavedRecipes(prev => [newRecipe, ...prev]); alert(`配方 "${productName}" 已保存！`);
+            }
           };
+          const deleteRecipe = (id) => { if (confirm("删除此配方？")) { setSavedRecipes(prev => prev.filter(r => r.id !== id)); setRecipesToCompare(prev => prev.filter(r => r.id !== id)); } };
+          const viewRecipeDetail = (recipe) => { setResult(recipe); setProductName(recipe.name); setView('recipe_detail'); };
+          const editLoadedRecipe = (recipe) => {
+              setTargetMass(recipe.target.mass); setTargetProtein(recipe.target.p); setTargetFat(recipe.target.f); setProductName(recipe.name); setModuleType(recipe.module); 
+              if (recipe.inputData) { setBaseId(recipe.inputData.baseId); setFatId(recipe.inputData.fatId); setProId(recipe.inputData.proId); setAdditives(recipe.inputData.additives); } else { setAdditives([]); }
+              setView('input');
+          }
+          const toggleCompare = (recipe) => {
+              setRecipesToCompare(prev => {
+                  if (prev.find(r => r.id === recipe.id)) return prev.filter(r => r.id !== recipe.id);
+                  else if (prev.length < 2) return [...prev, recipe];
+                  else { alert("最多对比两个配方。"); return prev; }
+              });
+          };
+          
           const updateIng = (id, k, v) => setIngredients(prev => prev.map(i => i.id === id ? { ...i, [k]: v } : i));
+          
+          // Verifier Logic
+          const verifierResult = useMemo(() => {
+              let totalMass = 0, totalP = 0, totalF = 0;
+              verifierInputs.forEach(input => {
+                  totalMass += input.amount;
+                  totalP += input.amount * (input.protein / 100);
+                  totalF += input.amount * (input.fat / 100);
+              });
+              const proteinPercent = totalMass > 0 ? (totalP / totalMass) * 100 : 0;
+              const fatPercent = totalMass > 0 ? (totalF / totalMass) * 100 : 0;
+              // 损耗计算
+              const actualMass = totalMass * (1 - verifierLoss/100);
+              const actualP_kg = totalP * (1 - verifierLoss/100);
+              const actualF_kg = totalF * (1 - verifierLoss/100);
+
+              return { totalMass, totalP, totalF, proteinPercent, fatPercent, actualMass, actualP_kg, actualF_kg };
+          }, [verifierInputs, verifierLoss]);
+          
+          const copyIngredientList = (recipe) => {
+              let text = `--- ${recipe.name} 投料单 (${recipe.target.mass} kg) ---\n目标 P/F: ${recipe.target.p}/${recipe.target.f}%\n`;
+              Object.entries(recipe.amounts).sort(([,a], [,b]) => b-a).forEach(([id, amt]) => {
+                  if (amt < 0.01) return;
+                  const ing = ingredients.find(i => i.id === id);
+                  const additiveData = recipe.inputData?.additives?.find(a => a.ingredientId === id);
+                  text += `${ing?.name} | ${amt.toFixed(3)}kg | ${additiveData?.model || ''}\n`;
+              });
+              copyToClipboard(text);
+          };
 
           const BottomNav = () => (
             <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center pb-safe h-[60px] z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
-                {[
-                    { id: 'design', label: '设计', icon: Icons.Layout, targetView: 'home' },
-                    { id: 'recipe', label: '配方', icon: Icons.Flask, targetView: 'recipe_list' },
-                    { id: 'tools', label: '工具', icon: Icons.Wrench, targetView: 'tools_list' },
-                    { id: 'archive', label: '存档', icon: Icons.Archive, targetView: 'archive' }
-                ].map(item => {
+                {[{ id: 'design', label: '设计', icon: Icons.Beaker, targetView: 'home' }, { id: 'recipe', label: '配方', icon: Icons.Flask, targetView: 'recipe_list' }, { id: 'tools', label: '工具', icon: Icons.Wrench, targetView: 'tools_list' }].map(item => {
                     const isActive = activeTab === item.id;
-                    const Icon = item.icon;
-                    return (
-                        <button 
-                            key={item.id}
-                            onClick={() => setView(item.targetView)}
-                            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400 hover:text-slate-500'}`}
-                        >
-                            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                            <span className="text-[10px] font-medium mt-1">{item.label}</span>
-                        </button>
-                    )
+                    return <button key={item.id} onClick={() => handleTabClick(item.id, item.targetView)} className={`flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400'}`}><item.icon size={22} strokeWidth={isActive ? 2.5 : 2} /><span className="text-[10px] font-medium mt-1">{item.label}</span></button>;
                 })}
             </nav>
           );
+
+          // --- 视图 ---
 
           if (view === 'home') {
               return (
                 <div className="flex flex-col h-full">
                     <div className="flex-1 overflow-y-auto px-5 pt-10 pb-24 page-enter">
                         <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900">乳品配方大师</h1>
-                                <p className="text-xs text-slate-500 mt-1">专业版 v4.0 - 智能合规</p>
-                            </div>
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
-                                <Icons.User size={20} />
-                            </div>
+                            <div><h1 className="text-2xl font-bold text-slate-900">乳品配方大师</h1><p className="text-xs text-slate-500 mt-1">专业版 v9.0 - 极致细节</p></div>
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm"><Icons.User size={20} /></div>
                         </div>
-
-                        <h2 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">开始研发</h2>
                         <div className="grid grid-cols-1 gap-4">
-                            <button onClick={() => goInput('milk')} className="card-press bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 relative overflow-hidden group">
-                                <div className="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                                <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 z-10 shadow-sm">
-                                    <Icons.Milk size={28} />
-                                </div>
-                                <div className="text-left z-10">
-                                    <h3 className="text-lg font-bold text-slate-800">调制乳/乳饮</h3>
-                                    <p className="text-xs text-slate-400 mt-1">巴氏奶、含乳饮料</p>
-                                </div>
-                            </button>
-
-                            <button onClick={() => goInput('yogurt')} className="card-press bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 relative overflow-hidden group">
-                                <div className="absolute right-0 top-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                                <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 z-10 shadow-sm">
-                                    <Icons.Yogurt size={28} />
-                                </div>
-                                <div className="text-left z-10">
-                                    <h3 className="text-lg font-bold text-slate-800">发酵乳/酸奶</h3>
-                                    <p className="text-xs text-slate-400 mt-1">酸奶基料、发酵乳</p>
-                                </div>
-                            </button>
+                            <button onClick={() => goInput('milk')} className="card-press bg-white p-5 rounded-3xl border border-blue-100 shadow-sm flex items-center gap-5 relative overflow-hidden"><div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-md"><Icons.Milk size={28} /></div><div className="text-left"><h3 className="text-lg font-bold text-slate-800">调制乳设计</h3><p className="text-xs text-slate-500 mt-1">巴氏奶、含乳饮料标准化</p></div></button>
+                            <button onClick={() => goInput('yogurt')} className="card-press bg-white p-5 rounded-3xl border border-purple-100 shadow-sm flex items-center gap-5 relative overflow-hidden"><div className="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white shadow-md"><Icons.Utensils size={28} /></div><div className="text-left"><h3 className="text-lg font-bold text-slate-800">发酵乳设计</h3><p className="text-xs text-slate-500 mt-1">酸奶基料、高蛋白发酵乳</p></div></button>
+                            <button onClick={() => setView('verifier_input')} className="card-press bg-white p-5 rounded-3xl border border-indigo-100 shadow-sm flex items-center gap-5 relative overflow-hidden"><div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-md"><Icons.ClipboardCheck size={28} /></div><div className="text-left"><h3 className="text-lg font-bold text-slate-800">配方组成验算</h3><p className="text-xs text-slate-500 mt-1">自定义原料 P/F 双指标核算</p></div></button>
                         </div>
                     </div>
                     <BottomNav />
@@ -378,332 +363,109 @@
               );
           }
 
+          if (view === 'verifier_input') {
+              const addVerifierInput = () => { const rm = ingredients.find(i => i.id === 'rm'); setVerifierInputs(prev => [...prev, { id: Date.now(), ingId: 'rm', amount: 100, protein: rm.protein, fat: rm.fat }]); };
+              const updateVerifierInput = (id, key, value) => { 
+                  setVerifierInputs(prev => prev.map(input => {
+                      if (input.id !== id) return input;
+                      const newData = { ...input, [key]: value };
+                      if (key === 'ingId') { const ing = ingredients.find(i => i.id === value); if (ing) { newData.protein = ing.protein; newData.fat = ing.fat; } }
+                      return newData;
+                  })); 
+              };
+              const removeVerifierInput = (id) => { setVerifierInputs(prev => prev.filter(input => input.id !== id)); };
+
+              return (
+                  <div className="flex flex-col h-full bg-slate-50">
+                      <div className="bg-white px-4 py-3 flex items-center border-b border-slate-200 sticky top-0 z-10"><button onClick={() => setView('home')} className="p-2 -ml-2"><Icons.ChevronLeft size={24} /></button><h2 className="font-bold ml-2 text-indigo-600">配方组成验算</h2></div>
+                      <div className="p-4 space-y-4 flex-1 overflow-y-auto pb-24">
+                          <div className="bg-white p-4 rounded-2xl shadow-lg border border-indigo-100">
+                              <div className="flex justify-between items-center mb-3 pb-3 border-b border-slate-50">
+                                  <div className="text-xs font-bold text-slate-400">验算指标 (理论值)</div>
+                                  <div className="flex items-center gap-2"><span className="text-xs text-slate-400">生产损耗:</span><input type="number" className="w-12 p-1 bg-slate-50 border rounded text-center text-xs font-bold" value={verifierLoss} onChange={e => setVerifierLoss(parseFloat(e.target.value) || 0)} /> <span className="text-xs text-slate-400">%</span></div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-center mb-4">
+                                  <div><div className="text-xs text-slate-400">蛋白 P%</div><div className="font-bold text-3xl text-purple-600">{verifierResult.proteinPercent.toFixed(2)}</div></div>
+                                  <div><div className="text-xs text-slate-400">脂肪 F%</div><div className="font-bold text-3xl text-blue-600">{verifierResult.fatPercent.toFixed(2)}</div></div>
+                              </div>
+                              <div className="bg-slate-50 rounded-xl p-3 text-xs space-y-1">
+                                  <div className="flex justify-between"><span>投料总量:</span><span className="font-mono font-bold">{verifierResult.totalMass.toFixed(2)} kg</span></div>
+                                  <div className="flex justify-between text-slate-500"><span>预计得率 (扣损耗):</span><span className="font-mono">{verifierResult.actualMass.toFixed(2)} kg</span></div>
+                                  <div className="flex justify-between text-purple-600"><span>预计产出蛋白:</span><span className="font-mono font-bold">{verifierResult.actualP_kg.toFixed(2)} kg</span></div>
+                              </div>
+                          </div>
+                          <div className="flex text-[10px] text-slate-400 px-2 font-bold"><div className="flex-1">原料</div><div className="w-14 text-center">质量kg</div><div className="w-12 text-center">Pro%</div><div className="w-12 text-center">Fat%</div><div className="w-8"></div></div>
+                          <div className="space-y-2">{verifierInputs.map(input => (<div key={input.id} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm"><select className="flex-1 p-2 bg-transparent text-sm font-bold text-slate-700 outline-none w-20" value={input.ingId} onChange={e => updateVerifierInput(input.id, 'ingId', e.target.value)}>{ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}</select><input type="number" className="w-14 p-1 text-center bg-slate-50 rounded border-b border-slate-200 text-sm" value={input.amount} onChange={e => updateVerifierInput(input.id, 'amount', parseFloat(e.target.value) || 0)} /><input type="number" className="w-12 p-1 text-center bg-purple-50 text-purple-700 rounded border-b border-purple-100 text-xs font-bold" value={input.protein} onChange={e => updateVerifierInput(input.id, 'protein', parseFloat(e.target.value) || 0)} /><input type="number" className="w-12 p-1 text-center bg-blue-50 text-blue-700 rounded border-b border-blue-100 text-xs font-bold" value={input.fat} onChange={e => updateVerifierInput(input.id, 'fat', parseFloat(e.target.value) || 0)} /><button onClick={() => removeVerifierInput(input.id)} className="text-slate-300 hover:text-red-500"><Icons.Trash size={16}/></button></div>))}<button onClick={addVerifierInput} className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-400 text-sm font-medium flex items-center justify-center gap-2"><Icons.Plus size={16} /> 添加原料</button></div>
+                      </div>
+                      <BottomNav />
+                  </div>
+              );
+          }
+
+          // 3. Input View
           if (view === 'input') {
-              const themeClass = moduleType === 'milk' ? 'bg-blue-600 shadow-blue-200' : 'bg-purple-600 shadow-purple-200';
+              const themeClass = moduleType === 'milk' ? 'bg-blue-600' : 'bg-purple-600';
               return (
                 <div className="flex flex-col h-full">
                     <div className={`bg-white px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm`}>
-                        <button onClick={() => setView('home')} className="p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-full">
-                            <Icons.ChevronLeft size={24} />
-                        </button>
-                        <h2 className="font-bold text-lg">{moduleType === 'milk' ? '调制乳研发' : '酸奶基料研发'}</h2>
-                        <div className="w-8"></div> 
+                        <button onClick={() => setView('home')} className="p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-full"><Icons.ChevronLeft size={24} /></button><h2 className="font-bold text-lg">{productName || '配方设计'}</h2><div className="w-8"></div> 
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 page-enter pb-40 no-scrollbar">
-                        <SectionCard title="设定目标指标">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-slate-400 mb-1 block">投料总质量 (kg)</label>
-                                    <input type="number" autoComplete="off" value={targetMass} onChange={e => setTargetMass(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-400 mb-1 block">目标蛋白 (%)</label>
-                                        <input type="number" autoComplete="off" step="0.1" value={targetProtein} onChange={e => setTargetProtein(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-400 mb-1 block">目标脂肪 (%)</label>
-                                        <input type="number" autoComplete="off" step="0.1" value={targetFat} onChange={e => setTargetFat(parseFloat(e.target.value) || 0)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-slate-400 mb-1 block">预估生产损耗率 (%)</label>
-                                    <input type="number" autoComplete="off" step="0.1" value={lossRate} onChange={e => setLossRate(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none" />
-                                </div>
-                            </div>
-                        </SectionCard>
-
-                        <SectionCard title="平衡体系原料">
-                            <div className="space-y-4">
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <label className="text-xs text-slate-400 font-bold block mb-1">基料 (填充体积)</label>
-                                    <select value={baseId} onChange={e => setBaseId(e.target.value)} className="w-full bg-transparent font-medium text-slate-700 outline-none appearance-none">
-                                        {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="flex-1 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <label className="text-xs text-slate-400 font-bold block mb-1">脂肪调节</label>
-                                        <select value={fatId} onChange={e => setFatId(e.target.value)} className="w-full bg-transparent font-medium text-slate-700 outline-none appearance-none">
-                                            {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex-1 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <label className="text-xs text-slate-400 font-bold block mb-1">蛋白调节</label>
-                                        <select value={proId} onChange={e => setProId(e.target.value)} className="w-full bg-transparent font-medium text-slate-700 outline-none appearance-none">
-                                            {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </SectionCard>
-
-                        <SectionCard title="固定添加辅料 (含GB2760预警)" isOpen={additives.length > 0}>
-                            <div className="space-y-3">
-                                {additives.map(add => (
-                                    <div key={add.id} className="flex items-center gap-2 animate-in slide-in-from-left-2">
-                                        <select className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-sm" value={add.ingredientId} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, ingredientId: e.target.value} : a))}>
-                                            {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
-                                        </select>
-                                        <div className="relative w-20">
-                                            <input type="number" autoComplete="off" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-right outline-none focus:border-blue-500" value={add.amount} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, amount: parseFloat(e.target.value) || 0} : a))} />
-                                            <span className="absolute right-6 top-2 text-xs text-slate-400">%</span>
-                                        </div>
-                                        <button onClick={() => setAdditives(prev => prev.filter(a => a.id !== add.id))} className="p-2 text-slate-300 hover:text-red-500"><Icons.Trash size={18} /></button>
-                                    </div>
-                                ))}
-                                <button onClick={() => setAdditives([...additives, { id: Date.now().toString(), ingredientId: 'sugar', amount: 0 }])} className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-400 text-sm font-medium hover:bg-white hover:text-blue-500 hover:border-blue-300 transition-colors flex items-center justify-center gap-2">
-                                    <Icons.Plus size={16} /> 添加原料 (支持果胶/卡拉胶检核)
-                                </button>
-                            </div>
-                        </SectionCard>
-
-                        <button 
-                            onClick={goResult}
-                            disabled={!result || !result.success}
-                            className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2
-                                ${result && result.success ? `${themeClass} text-white` : 'bg-slate-200 text-slate-400 cursor-not-allowed'}
-                            `}
-                        >
-                            {result && result.success ? '生成配方与合规报告' : result?.error || '参数有误'}
-                        </button>
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100"><label className="text-xs font-bold text-slate-400 mb-1 block">产品名称</label><input type="text" autoComplete="off" value={productName} onChange={e => setProductName(e.target.value)} className="w-full p-2 border border-slate-300 rounded-xl font-medium text-lg text-slate-700 outline-none"/></div>
+                        <SectionCard title="目标指标" isOpen={true}><div className="space-y-3"><div><label className="text-xs font-bold text-slate-400 mb-1 block">总质量 (kg)</label><input type="number" autoComplete="off" value={targetMass} onChange={e => setTargetMass(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-lg font-bold" /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-400 mb-1 block">蛋白 %</label><input type="number" step="0.1" value={targetProtein} onChange={e => setTargetProtein(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium" /></div><div><label className="text-xs font-bold text-slate-400 mb-1 block">脂肪 %</label><input type="number" step="0.1" value={targetFat} onChange={e => setTargetFat(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium" /></div></div><div><label className="text-xs font-bold text-slate-400 mb-1 block">损耗率 %</label><input type="number" step="0.1" value={lossRate} onChange={e => setLossRate(parseFloat(e.target.value) || 0)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" /></div></div></SectionCard>
+                        <SectionCard title="平衡体系" isOpen={true}><div className="space-y-3"><div className="p-2 bg-slate-50 rounded-xl"><label className="text-xs text-slate-400 font-bold block mb-1">基料</label><select value={baseId} onChange={e => setBaseId(e.target.value)} className="w-full bg-transparent font-medium text-sm">{ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}</select></div><div className="flex gap-3"><div className="flex-1 p-2 bg-slate-50 rounded-xl"><label className="text-xs text-slate-400 font-bold block mb-1">脂肪调节</label><select value={fatId} onChange={e => setFatId(e.target.value)} className="w-full bg-transparent font-medium text-sm">{ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}</select></div><div className="flex-1 p-2 bg-slate-50 rounded-xl"><label className="text-xs text-slate-400 font-bold block mb-1">蛋白调节</label><select value={proId} onChange={e => setProId(e.target.value)} className="w-full bg-transparent font-medium text-sm">{ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}</select></div></div></div></SectionCard>
+                        <SectionCard title="辅料 (含GB2760)" isOpen={additives.length > 0}><div className="space-y-2">{additives.map(add => (<div key={add.id} className="flex flex-col gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100"><div className="flex items-center gap-2"><select className="flex-1 p-2 bg-white rounded-lg text-xs" value={add.ingredientId} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, ingredientId: e.target.value} : a))}>{ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}</select><input type="number" className="w-16 p-2 bg-white rounded-lg text-xs text-right" value={add.amount} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, amount: parseFloat(e.target.value) || 0} : a))} /><button onClick={() => setAdditives(prev => prev.filter(a => a.id !== add.id))} className="text-red-400"><Icons.Trash size={16} /></button></div><input type="text" placeholder="型号/品牌" className="w-full p-1 text-xs bg-transparent border-b border-slate-200 outline-none" value={add.model || ''} onChange={e => setAdditives(prev => prev.map(a => a.id === add.id ? {...a, model: e.target.value} : a))} /></div>))}<button onClick={() => setAdditives([...additives, { id: Date.now().toString(), ingredientId: 'sugar', amount: 0, model: '' }])} className="w-full py-2 border border-dashed border-slate-300 rounded-xl text-slate-400 text-sm flex justify-center gap-2"><Icons.Plus size={16} /> 添加原料</button></div></SectionCard>
+                        <button onClick={goResult} disabled={!result || !result.success || !productName} className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl flex justify-center gap-2 ${result && result.success && productName ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'}`}>生成报告</button>
                     </div>
                     <BottomNav />
                 </div>
               );
           }
 
+          // 4. Result View
           if (view === 'result' && result) {
-              const themeClass = moduleType === 'milk' ? 'bg-blue-600' : 'bg-purple-600';
-              return (
-                <div className="flex flex-col h-full bg-white page-enter">
-                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                         <button onClick={() => setView('input')} className="flex items-center gap-1 text-slate-600 font-medium">
-                            <Icons.ChevronLeft size={22} /> 返回修改
-                        </button>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-bold">{result.category}</span>
-                        </div>
-                    </div>
+            const themeClass = moduleType === 'milk' ? 'bg-blue-600' : 'bg-purple-600';
+            return (<div className="flex flex-col h-full bg-white page-enter"><div className="px-4 py-3 border-b border-slate-100 flex justify-between sticky top-0 bg-white z-10"><button onClick={() => setView('input')} className="flex gap-1 text-slate-600"><Icons.ChevronLeft size={22} /> 返回</button><span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-bold">{result.category}</span></div><div className="flex-1 overflow-y-auto p-4 pb-24"><h1 className="text-2xl font-bold mb-4">{productName}</h1>{result.warnings.length > 0 && <div className="mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-600">{result.warnings.map((w,i)=><div key={i}>⚠️ {w}</div>)}</div>}<div className={`${themeClass} rounded-3xl p-6 text-white shadow-xl mb-6`}><div className="text-4xl font-bold mb-4">¥{(result.totalCost * (1 + lossRate/100)).toFixed(2)}</div><div className="flex gap-3 text-xs"><div className="bg-black/10 px-3 py-2 rounded flex-1"><div>单吨</div><div className="font-bold text-lg">{(result.totalCost*(1+lossRate/100)/targetMass*1000).toFixed(0)}</div></div><div className="bg-black/10 px-3 py-2 rounded flex-1"><div>TS</div><div className="font-bold text-lg">{result.finalStats.ts.toFixed(1)}%</div></div></div></div><div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100 text-center grid grid-cols-3 gap-2 text-sm"><div><div className="text-slate-400 text-xs">目标P</div><div className="font-bold text-blue-600">{result.finalStats.protein.toFixed(2)}%</div><div className="text-xs text-green-500">实:{result.actualStats.protein.toFixed(2)}</div></div><div><div className="text-slate-400 text-xs">目标F</div><div className="font-bold text-blue-600">{result.finalStats.fat.toFixed(2)}%</div><div className="text-xs text-green-500">实:{result.actualStats.fat.toFixed(2)}</div></div><div><div className="text-slate-400 text-xs">MSNF</div><div className="font-bold text-slate-700">{result.finalStats.msnf.toFixed(2)}%</div></div></div><div className="mb-6"><h3 className="font-bold text-slate-800 mb-3 text-lg flex items-center gap-2"><Icons.Table size={18} className="text-blue-600"/> 营养成分表 (GB 28050)</h3><div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><table className="nutrition-table text-sm"><thead><tr><th className="text-left">项目</th><th className="text-right">每 100 g</th><th className="text-right">NRV%</th></tr></thead><tbody><tr><td>能量</td><td className="text-right font-bold">{result.nutrition.energy.toFixed(0)} kJ</td><td className="text-right">{Math.round(result.nutrition.energy / NRV.energy * 100)}%</td></tr><tr><td>蛋白质</td><td className="text-right">{result.nutrition.protein.toFixed(1)} g</td><td className="text-right">{Math.round(result.nutrition.protein / NRV.protein * 100)}%</td></tr><tr><td>脂肪</td><td className="text-right">{result.nutrition.fat.toFixed(1)} g</td><td className="text-right">{Math.round(result.nutrition.fat / NRV.fat * 100)}%</td></tr><tr><td>碳水化合物</td><td className="text-right">{result.nutrition.carbs.toFixed(1)} g</td><td className="text-right">{Math.round(result.nutrition.carbs / NRV.carbs * 100)}%</td></tr><tr><td>钠</td><td className="text-right">{result.nutrition.sodium.toFixed(0)} mg</td><td className="text-right">{Math.round(result.nutrition.sodium / NRV.sodium * 100)}%</td></tr></tbody></table></div></div>
+                        <div className="mt-6"><h3 className="font-bold text-slate-800 mb-3 text-lg">生产配料单</h3><div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-4"><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-bold text-xs"><tr><th className="p-4 font-medium">原料名称</th><th className="p-4 text-right font-medium">比例</th><th className="p-4 text-right font-medium">投料量</th></tr></thead><tbody className="divide-y divide-slate-50">{Object.entries(result.amounts).sort(([,a], [,b]) => b-a).map(([id, amt]) => {if(amt < 0.01) return null; const ing = ingredients.find(i => i.id === id); const additiveData = additives.find(a => a.ingredientId === id); return (<tr key={id}><td className="p-4 font-medium text-slate-700">{ing?.name} {additiveData && additiveData.model && <div className="text-xs text-slate-400 italic">({additiveData.model})</div>}</td><td className="p-4 text-right text-slate-400 font-mono">{((amt/targetMass)*100).toFixed(2)}%</td><td className={`p-4 text-right font-bold font-mono text-base ${moduleType === 'milk' ? 'text-blue-600' : 'text-purple-600'}`}>{amt.toFixed(2)}</td></tr>);})}</tbody></table></div></div>
+                        <div className="flex gap-3"><button onClick={()=>window.print()} className="flex-1 py-3 border rounded-xl">打印</button><button onClick={saveRecipe} className="flex-1 py-3 bg-blue-600 text-white rounded-xl">保存</button></div></div><BottomNav /></div>);
+          }
 
-                    <div className="flex-1 overflow-y-auto p-4 no-scrollbar pb-24">
-                        {result.warnings && result.warnings.length > 0 && (
-                            <div className="mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                {result.warnings.map((w, i) => <div key={i} className="text-xs text-amber-600 font-bold flex gap-1"><span>⚠️</span>{w}</div>)}
-                            </div>
-                        )}
+          // 5. Recipe List
+          if (view === 'recipe_list') {
+             return (<div className="flex flex-col h-full"><div className="bg-white px-4 py-3 border-b sticky top-0 z-10 flex justify-between"><h2 className="font-bold">配方库</h2>{recipesToCompare.length>0 && <button onClick={()=>setView('recipe_compare')} className="text-sm px-3 py-1 bg-blue-100 text-blue-600 rounded-full">对比({recipesToCompare.length})</button>}</div><div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">{savedRecipes.length===0?<div className="text-center text-slate-400 mt-10">暂无配方</div>:savedRecipes.map(r=>(<div key={r.id} className="bg-white p-4 rounded-xl border shadow-sm"><div className="flex justify-between font-bold"><div>{r.name}</div><div className="text-xs font-normal text-slate-400">{r.date}</div></div><div className="flex justify-between mt-2 text-sm text-slate-500"><div>P:{r.target.p}% F:{r.target.f}%</div><div className="flex gap-2"><button onClick={()=>toggleCompare(r)} className="text-blue-600">对比</button><button onClick={()=>{setResult(r);setProductName(r.name);setView('recipe_detail')}} className="text-green-600">详情</button><button onClick={()=>deleteRecipe(r.id)} className="text-red-500"><Icons.Trash size={14}/></button></div></div></div>))}</div><BottomNav /></div>);
+          }
+          if (view === 'recipe_detail' && result) { return (<div className="flex flex-col h-full bg-white"><div className="px-4 py-3 border-b flex justify-between sticky top-0 bg-white"><button onClick={()=>setView('recipe_list')}>返回</button></div><div className="flex-1 p-4 pb-24"><h1 className="text-2xl font-bold mb-4">{result.name}</h1><div className="bg-slate-50 p-4 rounded-xl"><table className="w-full text-sm"><thead><tr><th className="text-left">原料</th><th className="text-right">投料</th></tr></thead><tbody>{Object.entries(result.amounts).map(([id,amt])=>amt>0.01 && <tr key={id}><td className="py-1">{ingredients.find(i=>i.id===id)?.name}</td><td className="text-right font-bold">{amt.toFixed(2)}</td></tr>)}</tbody></table></div><div className="mt-4 flex gap-3"><button onClick={()=>copyIngredientList(result)} className="flex-1 py-3 border rounded-xl">复制</button><button onClick={()=>editLoadedRecipe(result)} className="flex-1 py-3 bg-green-600 text-white rounded-xl">编辑</button></div></div><BottomNav /></div>); }
+          
+          // 6. Compare View (Fixed)
+          if (view === 'recipe_compare') {
+              const [recipeA, recipeB] = recipesToCompare;
+              // Safety check for nulls
+              if (!recipeA) return <div className="p-4">请选择至少一个配方进行对比</div>;
 
-                        <div className={`${themeClass} rounded-3xl p-6 text-white shadow-xl mb-6`}>
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="text-white/80 text-xs font-bold uppercase tracking-wider">预估总成本 (含{lossRate}%损耗)</span>
-                                <div className="bg-white/20 backdrop-blur px-3 py-1 rounded-full text-xs font-medium">
-                                    {targetMass} kg
-                                </div>
-                            </div>
-                            <div className="text-4xl font-bold mb-4">
-                                <span className="text-2xl align-top mr-1">¥</span>{(result.totalCost * (1 + lossRate/100)).toFixed(2)}
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="bg-black/10 rounded-lg px-3 py-2 flex-1">
-                                    <div className="text-[10px] text-white/60 uppercase">单吨成本 (元)</div>
-                                    <div className="font-bold text-lg">{ (result.totalCost * (1 + lossRate/100) / targetMass * 1000).toFixed(0) }</div>
-                                </div>
-                                <div className="bg-black/10 rounded-lg px-3 py-2 flex-1">
-                                    <div className="text-[10px] text-white/60 uppercase">总干物质 (TS)</div>
-                                    <div className="font-bold text-lg">{result.finalStats.ts.toFixed(1)}%</div>
-                                </div>
-                            </div>
-                        </div>
+              const formatData = (r) => r ? { name: r.name, p: r.target.p, cost: (r.cost/r.target.mass*1000).toFixed(0) } : { name: '-', p: '-', cost: '-' };
+              const dataA = formatData(recipeA);
+              const dataB = formatData(recipeB);
 
-                        <div className="mb-6">
-                             <h3 className="font-bold text-slate-800 mb-3 text-lg flex items-center gap-2"><Icons.Table size={18} className="text-blue-600"/> 营养成分表 (GB 28050)</h3>
-                             <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                <table className="nutrition-table text-sm">
-                                    <thead>
-                                        <tr>
-                                            <th className="text-left">项目</th>
-                                            <th className="text-right">每 100 g</th>
-                                            <th className="text-right">NRV%</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>能量</td>
-                                            <td className="text-right font-bold">{result.nutrition.energy.toFixed(0)} kJ</td>
-                                            <td className="text-right">{Math.round(result.nutrition.energy / NRV.energy * 100)}%</td>
-                                        </tr>
-                                        <tr>
-                                            <td>蛋白质</td>
-                                            <td className="text-right">{result.nutrition.protein.toFixed(1)} g</td>
-                                            <td className="text-right">{Math.round(result.nutrition.protein / NRV.protein * 100)}%</td>
-                                        </tr>
-                                        <tr>
-                                            <td>脂肪</td>
-                                            <td className="text-right">{result.nutrition.fat.toFixed(1)} g</td>
-                                            <td className="text-right">{Math.round(result.nutrition.fat / NRV.fat * 100)}%</td>
-                                        </tr>
-                                        <tr>
-                                            <td>碳水化合物</td>
-                                            <td className="text-right">{result.nutrition.carbs.toFixed(1)} g</td>
-                                            <td className="text-right">{Math.round(result.nutrition.carbs / NRV.carbs * 100)}%</td>
-                                        </tr>
-                                        <tr>
-                                            <td>钠</td>
-                                            <td className="text-right">{result.nutrition.sodium.toFixed(0)} mg</td>
-                                            <td className="text-right">{Math.round(result.nutrition.sodium / NRV.sodium * 100)}%</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div className="mt-2 text-[10px] text-slate-400">*注：数值仅基于理论计算，标签制作前请以实测为准。</div>
-                             </div>
-                        </div>
-
-                        <h3 className="font-bold text-slate-800 mb-3 text-lg">生产配料单</h3>
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 text-slate-500 font-bold text-xs">
-                                    <tr>
-                                        <th className="p-4 font-medium">原料名称</th>
-                                        <th className="p-4 text-right font-medium">比例</th>
-                                        <th className="p-4 text-right font-medium">投料量</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {Object.entries(result.amounts).sort(([,a], [,b]) => b-a).map(([id, amt]) => {
-                                        if(amt < 0.01) return null;
-                                        const ing = ingredients.find(i => i.id === id);
-                                        return (
-                                            <tr key={id}>
-                                                <td className="p-4 font-medium text-slate-700">{ing?.name}</td>
-                                                <td className="p-4 text-right text-slate-400 font-mono">{((amt/targetMass)*100).toFixed(2)}%</td>
-                                                <td className={`p-4 text-right font-bold font-mono text-base ${moduleType === 'milk' ? 'text-blue-600' : 'text-purple-600'}`}>{amt.toFixed(2)}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                        <button onClick={() => window.print()} className="w-full py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50">保存完整研发报告</button>
-                    </div>
-                    <BottomNav />
-                </div>
-              );
+              return (<div className="flex flex-col h-full"><div className="p-4 border-b flex justify-between"><button onClick={()=>setView('recipe_list')}><Icons.ChevronLeft/></button><span>对比</span><div className="w-4"></div></div><div className="p-4"><table className="w-full text-sm text-center"><thead><tr><th>指标</th><th>{dataA.name}</th><th>{dataB.name}</th></tr></thead><tbody><tr><td>蛋白</td><td>{dataA.p}%</td><td>{dataB.p}%</td></tr><tr><td>单吨</td><td>¥{dataA.cost}</td><td>¥{dataB.cost}</td></tr></tbody></table><button onClick={()=>setRecipesToCompare([])} className="mt-4 w-full py-2 border rounded">清空</button></div><BottomNav /></div>); 
           }
 
           if (view === 'tools_list') {
-              // 静态映射颜色类名，避免 Tailwind 动态解析失败
               const tools = [
-                  { id: 'db', name: '原料数据库', desc: '管理成分与成本', icon: Icons.Database, bgClass: 'bg-emerald-100', textClass: 'text-emerald-600', color: 'emerald' },
-                  { id: 'tool_sensory', name: '感官评测', desc: '生成雷达图', icon: Icons.Radar, bgClass: 'bg-pink-100', textClass: 'text-pink-600', color: 'pink' },
-                  { id: 'tool_fvalue', name: '杀菌F值计算', desc: '工艺强度评估', icon: Icons.Thermometer, bgClass: 'bg-orange-100', textClass: 'text-orange-600', color: 'orange' },
-                  { id: 'compliance', name: '合规自检', desc: 'GB2760查询', icon: Icons.ShieldCheck, bgClass: 'bg-indigo-100', textClass: 'text-indigo-600', color: 'indigo', action: () => alert("集成在配方计算结果页中") },
+                  { id: 'db', name: '原料数据库', desc: '管理成分与成本', icon: Icons.Database, bgClass: 'bg-emerald-100', textClass: 'text-emerald-600', view: 'db' },
+                  { id: 'tool_herb', name: '药食同源', desc: '常用药材查询', icon: Icons.Leaf, bgClass: 'bg-amber-100', textClass: 'text-amber-600', view: 'tool_herb' },
+                  { id: 'tool_fvalue', name: '杀菌计算器', desc: 'F0 / PU 值', icon: Icons.ThermometerSun, bgClass: 'bg-orange-100', textClass: 'text-orange-600', view: 'tool_fvalue' },
+                  { id: 'tool_recommend', name: '配方推荐', desc: '热门模板加载', icon: Icons.Star, bgClass: 'bg-indigo-100', textClass: 'text-indigo-600', view: 'tool_recommend' },
               ];
-
               return (
                   <div className="flex flex-col h-full">
                       <div className="flex-1 overflow-y-auto px-5 pt-10 pb-24 page-enter">
                           <h1 className="text-2xl font-bold text-slate-900 mb-6">研发工具箱</h1>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                              {tools.map(t => (
-                                  <div key={t.id} onClick={() => t.action ? t.action() : setView(t.id)} className="card-press bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center cursor-pointer">
-                                      <div className={`w-12 h-12 rounded-xl ${t.bgClass} flex items-center justify-center ${t.textClass} mb-3`}>
-                                          <t.icon size={24} />
-                                      </div>
-                                      <div className="font-bold text-slate-700">{t.name}</div>
-                                      <div className="text-xs text-slate-400 mt-1">{t.desc}</div>
-                                  </div>
-                              ))}
+                          <div className="grid grid-cols-2 gap-4 mb-6">
+                              {tools.map(t => (<div key={t.id} onClick={() => setView(t.view)} className="card-press bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center cursor-pointer"><div className={`w-12 h-12 rounded-xl ${t.bgClass} flex items-center justify-center ${t.textClass} mb-3`}><t.icon size={24} /></div><div className="font-bold text-slate-700">{t.name}</div><div className="text-xs text-slate-400 mt-1">{t.desc}</div></div>))}
                           </div>
-                      </div>
-                      <BottomNav />
-                  </div>
-              )
-          }
-
-          if (view === 'db') {
-              return (
-                <div className="flex flex-col h-full bg-slate-50">
-                    <div className="bg-white px-4 py-3 flex items-center border-b border-slate-200 sticky top-0 z-10">
-                        <button onClick={() => setView('tools_list')} className="p-2 -ml-2"><Icons.ChevronLeft size={24} /></button>
-                        <h2 className="font-bold ml-2">原料成分数据库</h2>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24 no-scrollbar">
-                        {ingredients.map(ing => (
-                             <div key={ing.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className="font-bold text-slate-800 text-lg">{ing.name}</div>
-                                    <div className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">TS: {ing.ts}%</div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 mb-2">
-                                   <div><label className="text-[10px] text-slate-400">蛋白 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.protein} onChange={e => updateIng(ing.id, 'protein', parseFloat(e.target.value))} /></div>
-                                   <div><label className="text-[10px] text-slate-400">脂肪 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.fat} onChange={e => updateIng(ing.id, 'fat', parseFloat(e.target.value))} /></div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                   <div><label className="text-[10px] text-slate-400">碳水 g/100g</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.carbs} onChange={e => updateIng(ing.id, 'carbs', parseFloat(e.target.value))} /></div>
-                                   <div><label className="text-[10px] text-slate-400">钠 mg/100g</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.sodium} onChange={e => updateIng(ing.id, 'sodium', parseFloat(e.target.value))} /></div>
-                                </div>
-                             </div>
-                        ))}
-                    </div>
-                    <BottomNav />
-                </div>
-              );
-          }
-
-          if (view === 'tool_sensory') {
-              const [scores, setScores] = useState({ color: 8, texture: 8, flavor: 8, smell: 8, appearance: 8 });
-              return (
-                  <div className="flex flex-col h-full bg-slate-50">
-                      <div className="bg-white px-4 py-3 flex items-center border-b border-slate-200">
-                          <button onClick={() => setView('tools_list')} className="p-2 -ml-2"><Icons.ChevronLeft size={24} /></button>
-                          <h2 className="font-bold ml-2">感官评测 (Sensory)</h2>
-                      </div>
-                      <div className="p-6 space-y-6">
-                          <div className="bg-white p-4 rounded-2xl shadow-sm flex justify-center">
-                              <RadarChart data={scores} />
-                          </div>
-                          <div className="space-y-4 bg-white p-4 rounded-2xl shadow-sm">
-                              {Object.keys(scores).map(k => (
-                                  <div key={k}>
-                                      <div className="flex justify-between text-sm font-bold capitalize mb-1">
-                                          <span>{k}</span><span>{scores[k]}</span>
-                                      </div>
-                                      <input type="range" min="0" max="10" value={scores[k]} onChange={e => setScores({...scores, [k]: parseInt(e.target.value)})} className="w-full accent-pink-500"/>
-                                  </div>
-                              ))}
-                          </div>
-                      </div>
-                      <BottomNav />
-                  </div>
-              )
-          }
-
-          if (view === 'tool_fvalue') {
-              const [temp, setTemp] = useState(137);
-              const [time, setTime] = useState(4);
-              const f0 = Math.pow(10, (temp - 121.1) / 10) * (time / 60);
-              return (
-                  <div className="flex flex-col h-full bg-slate-50">
-                      <div className="bg-white px-4 py-3 flex items-center border-b border-slate-200">
-                          <button onClick={() => setView('tools_list')} className="p-2 -ml-2"><Icons.ChevronLeft size={24} /></button>
-                          <h2 className="font-bold ml-2">杀菌强度计算 (F0)</h2>
-                      </div>
-                      <div className="p-6 space-y-6">
-                          <div className="bg-orange-500 text-white p-6 rounded-2xl text-center shadow-lg">
-                              <div className="text-sm opacity-80 mb-1">理论 F0 值</div>
-                              <div className="text-5xl font-bold">{f0.toFixed(2)}</div>
-                              <div className="text-xs mt-2 opacity-80">基准温度: 121.1°C, Z=10°C</div>
-                          </div>
-                          <div className="bg-white p-6 rounded-2xl shadow-sm space-y-4">
-                               <div>
-                                  <label className="text-sm font-bold text-slate-500">杀菌温度 (°C)</label>
-                                  <input type="number" autoComplete="off" value={temp} onChange={e => setTemp(parseFloat(e.target.value))} className="w-full p-3 border rounded-xl mt-1 text-xl font-bold"/>
-                               </div>
-                               <div>
-                                  <label className="text-sm font-bold text-slate-500">保持时间 (s)</label>
-                                  <input type="number" autoComplete="off" value={time} onChange={e => setTime(parseFloat(e.target.value))} className="w-full p-3 border rounded-xl mt-1 text-xl font-bold"/>
-                               </div>
+                          <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center gap-4">
+                              <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shrink-0"><Icons.MessageSquare size={20}/></div>
+                              <div><h3 className="font-bold text-indigo-900 text-sm">反馈建议</h3><p className="text-xs text-indigo-700 mt-0.5">联系微信: <span className="font-mono font-bold select-all">1458634592</span></p></div>
                           </div>
                       </div>
                       <BottomNav />
@@ -711,27 +473,79 @@
               )
           }
           
-          if (view === 'archive' || view === 'recipe_list') {
+          if (view === 'tool_fvalue') {
+             const updateF = (k, v) => setFValueParams(prev => ({...prev, [k]: v}));
+             const { temp, time, z, refTemp, mode } = fValueParams;
+             const resultVal = (time/60) * Math.pow(10, (temp - refTemp)/z);
+             
              return (
-                <div className="flex flex-col h-full justify-center items-center text-slate-400">
-                    <Icons.Archive size={48} className="mb-4 opacity-20" />
-                    <p>存档与历史记录模块</p>
-                    <button onClick={() => setView('home')} className="mt-4 text-blue-600 font-bold">返回首页</button>
+                 <div className="flex flex-col h-full bg-slate-50">
+                    <div className="bg-white px-4 py-3 border-b flex items-center justify-between sticky top-0"><button onClick={()=>setView('tools_list')}><Icons.ChevronLeft/></button><div className="flex bg-slate-100 rounded-lg p-1"><button onClick={()=>setFValueParams({temp:137,time:4,z:10,refTemp:121.1,mode:'UHT'})} className={`px-3 py-1 text-xs rounded ${mode==='UHT'?'bg-white shadow':''}`}>UHT灭菌</button><button onClick={()=>setFValueParams({temp:65,time:1800,z:10,refTemp:60,mode:'PU'})} className={`px-3 py-1 text-xs rounded ${mode==='PU'?'bg-white shadow':''}`}>巴氏杀菌</button></div></div>
+                    <div className="p-6 space-y-6">
+                        <div className="bg-orange-500 text-white p-6 rounded-2xl text-center shadow-lg"><div className="text-sm opacity-80 mb-1">理论强度 ({mode==='UHT'?'F₀':'PU'})</div><div className="text-5xl font-bold">{resultVal.toFixed(2)} <span className="text-lg">min</span></div></div>
+                        <div className="bg-white p-6 rounded-2xl shadow-sm space-y-4">
+                            <div><label className="text-xs text-slate-500 font-bold">杀菌温度 T (°C)</label><input type="number" value={temp} onChange={e=>updateF('temp', parseFloat(e.target.value))} className="w-full p-3 border rounded-xl text-xl font-bold mt-1"/></div>
+                            <div><label className="text-xs text-slate-500 font-bold">保持时间 t (秒)</label><input type="number" value={time} onChange={e=>updateF('time', parseFloat(e.target.value))} className="w-full p-3 border rounded-xl text-xl font-bold mt-1"/></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="text-xs text-slate-400">基准 Tref</label><input type="number" value={refTemp} onChange={e=>updateF('refTemp', parseFloat(e.target.value))} className="w-full p-2 border rounded-lg text-sm"/></div>
+                                <div><label className="text-xs text-slate-400">Z 值</label><input type="number" value={z} onChange={e=>updateF('z', parseFloat(e.target.value))} className="w-full p-2 border rounded-lg text-sm"/></div>
+                            </div>
+                        </div>
+                        <div className="text-xs text-slate-400 text-center">默认参数: UHT(121.1℃, Z=10), 巴氏(60℃, Z=10)</div>
+                    </div>
                     <BottomNav />
-                </div>
-             )
+                 </div>
+             );
+          }
+
+          if (view === 'tool_herb') {
+             return (
+                 <div className="flex flex-col h-full bg-slate-50">
+                    <div className="bg-white px-4 py-3 border-b sticky top-0"><button onClick={()=>setView('tools_list')}><Icons.ChevronLeft/></button> <span className="ml-2 font-bold">药食同源查询</span></div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+                        {HERBS.map((h,i) => (
+                            <div key={i} className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm">
+                                <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-lg text-amber-900">{h.name}</h3><span className="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded">{h.type}</span></div>
+                                <p className="text-sm text-slate-600 mb-2">{h.benefit}</p>
+                                <div className="text-xs text-slate-400 bg-slate-50 p-2 rounded">应用建议: {h.usage}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <BottomNav />
+                 </div>
+             );
+          }
+          
+          if (view === 'tool_recommend') {
+             return (
+                 <div className="flex flex-col h-full bg-slate-50">
+                    <div className="bg-white px-4 py-3 border-b sticky top-0"><button onClick={()=>setView('tools_list')}><Icons.ChevronLeft/></button> <span className="ml-2 font-bold">热门配方推荐</span></div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+                        {RECOMMEND_RECIPES.map((r,i) => (
+                            <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm flex justify-between items-center">
+                                <div>
+                                    <div className="font-bold text-slate-800">{r.name}</div>
+                                    <div className="text-xs text-slate-500 mt-1">{r.desc}</div>
+                                    <div className="text-xs font-mono text-indigo-600 mt-1">P:{r.p}% F:{r.f}%</div>
+                                </div>
+                                <button onClick={()=>{ setModuleType(r.type); setTargetProtein(r.p); setTargetFat(r.f); setProductName(r.name); setView('input'); }} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg">加载</button>
+                            </div>
+                        ))}
+                    </div>
+                    <BottomNav />
+                 </div>
+             );
+          }
+
+          if (view === 'db') {
+              return (<div className="flex flex-col h-full bg-slate-50"><div className="bg-white px-4 py-3 flex items-center border-b border-slate-200 sticky top-0 z-10"><button onClick={() => setView('tools_list')} className="p-2 -ml-2"><Icons.ChevronLeft size={24} /></button><h2 className="font-bold ml-2">原料成分数据库</h2></div><div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24 no-scrollbar">{ingredients.map(ing => (<div key={ing.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><div className="flex justify-between items-start mb-3"><div className="font-bold text-slate-800 text-lg">{ing.name}</div><div className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">成本: ¥{ing.cost.toFixed(1)}/kg</div></div><div className="grid grid-cols-4 gap-3 mb-2"><div><label className="text-[10px] text-slate-400">蛋白 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.protein} onChange={e => updateIng(ing.id, 'protein', parseFloat(e.target.value))} /></div><div><label className="text-[10px] text-slate-400">脂肪 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.fat} onChange={e => updateIng(ing.id, 'fat', parseFloat(e.target.value))} /></div><div><label className="text-[10px] text-slate-400">总固 %</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.ts} onChange={e => updateIng(ing.id, 'ts', parseFloat(e.target.value))} /></div><div><label className="text-[10px] text-slate-400">钠 mg</label><input type="number" autoComplete="off" className="w-full p-1 bg-slate-50 border rounded text-center" value={ing.sodium} onChange={e => updateIng(ing.id, 'sodium', parseFloat(e.target.value))} /></div></div></div>))}</div><BottomNav /></div>);
           }
 
           return null;
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        // Wrap in ErrorBoundary
-        root.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>
-        );
+        root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
 </body>
 </html>
